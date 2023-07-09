@@ -1,0 +1,9 @@
+name=Chromatofore Filament Changer Library
+version=0.0.1
+author=Rich Dobbs
+maintainer=Rich Dobbs
+sentence=Chromatofore Filament Changer Library
+paragraph=Chromatofore Filament Changer Library
+category=Device Control
+url=https://github.com/rich-dobbs-13440/chromatofore_arduino_library
+architectures=*
