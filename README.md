@@ -1,4 +1,4 @@
-# Chromatofore Filament Changer Library ![Build Status](https://github.com/rich-dobbs-13440/chromatofore_arduino_library
+# Chromatofore Filament Changer Library 
 
 This is a library for a low cost filament changer for inexpensive 3d printers.  It is targeted at fully automated
 swapping of filament at layers and between prints.  It is not expected to be robust enough for full multicolor 
