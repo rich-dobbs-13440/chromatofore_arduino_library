@@ -10,7 +10,15 @@
 			"random": "cpp",
 			"cmath": "cpp",
 			"cstddef": "cpp",
-			"*.tcc": "cpp"
+			"*.tcc": "cpp",
+			"array": "cpp",
+			"hash_map": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"string": "cpp",
+			"vector": "cpp",
+			"string_view": "cpp",
+			"initializer_list": "cpp"
 		}
 	}
 }

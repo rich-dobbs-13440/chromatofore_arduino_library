@@ -1,3 +1,41 @@
+/* 
+This class implements the overall filament changer object.
+
+The filament changer can be configured and controlled by sending it GCODE over the USB serial
+connection.  
+
+The axes used for the machine for the Earwig Filament Actuator are:
+
+      Rotation of fixed clamp:  B
+      Rotation of moving clamp: C
+      Location of moving clamp: X
+
+Note that at this time, actual location of the moving clamp is not linear with the X, 
+but is a function of the linkage kinematics.  
+
+The following GCODE parsing is currently implemented:
+
+
+G1 B10 ; Move the fixed clamp servo to an angle of 10 degrees 
+
+G1 C10 ; Move the clamp servo to an angle of 10 degrees
+
+G1 X10 ; Move the pusher servo to an angle of 10 degrees
+
+G10 T1 L0 B11 C12 X40 ; Remember minimum values for the B, C, and X axis angles for tool 1
+
+G10 T2 L1 B100 C1100 X12 ; Remember maximum values for the B, C, and X axis angles for tool 2
+
+
+The following commands are parsed, but the functionality is not yet implemented:
+G28 C0 : Move clamp servo to home position signaled by limit switch.  
+
+G1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.  (Parsed by functionality is not yet implemented in the actuator!)
+
+
+*/
+
+
 #pragma once
 
 #include <Arduino.h>
@@ -8,7 +46,7 @@
 
 class ChromatoforeFilamentChanger {
  private:
-  String version = "0.1k";
+  String version = "0.1m";
   EarwigFilamentActuator** actuatorArray;
   int actuatorArraySize;
   int baudRate = 9600;

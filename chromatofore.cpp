@@ -43,9 +43,15 @@ void ChromatoforeFilamentChanger::begin() {
   debugLog("Baud Rate: ", baudRate);
   debugLog("Millis: ", millis());
 
-  for (int i = 0; i < actuatorArraySize; ++i) {
-    if (actuatorArray[i] != nullptr) {
-      actuatorArray[i]->begin();
+  for (int tool = 0; tool < actuatorArraySize; ++tool) {
+    if (actuatorArray[tool] != nullptr) {
+        uint8_t minB = getMinimumAngleB(tool);
+        uint8_t maxB = getMaximumAngleB(tool);
+        uint8_t minC = getMinimumAngleC(tool);
+        uint8_t maxC = getMaximumAngleC(tool);
+        uint8_t minX = getMinimumAngleX(tool);
+        uint8_t maxX = getMaximumAngleX(tool);
+      actuatorArray[tool]->begin(minB, maxB, minC, maxC, minX, maxX);
     }
   }
 }
@@ -223,11 +229,12 @@ void ChromatoforeFilamentChanger::rememberMinimumAngleForTool(int tool, float b,
   // Calculate the EEPROM offset based on the tool index
   int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6);
 
-// Check if b value is specified and store it
+  // Check if b value is specified and store it
   if (!isnan(b)) {
     if (b >= 0 && b <= 180) {
       uint8_t minB = static_cast<uint8_t>(b);
       EEPROM.put(offset, minB);
+      debugLog("Current b mininum", getMinimumAngleB(tool));
     } else {
       debugLog("In rememberMinimumAngleForTool, b is out of range 0-180", b, "No value remembered");
     }
@@ -238,6 +245,7 @@ void ChromatoforeFilamentChanger::rememberMinimumAngleForTool(int tool, float b,
     if (c >= 0 && c <= 180) {
       uint8_t minC = static_cast<uint8_t>(c);
       EEPROM.put(offset + sizeof(uint8_t), minC);
+      debugLog("Current c mininum", getMinimumAngleC(tool));
     } else {
       debugLog("In rememberMinimumAngleForTool, c is out of range 0-180", c, "No value remembered");
     }
@@ -248,6 +256,7 @@ void ChromatoforeFilamentChanger::rememberMinimumAngleForTool(int tool, float b,
     if (x >= 0 && x <= 180) {
       uint8_t minX = static_cast<uint8_t>(x);
       EEPROM.put(offset + sizeof(uint8_t) * 2, minX);
+      debugLog("Current x mininum", getMinimumAngleX(tool));
     } else {
       debugLog("In rememberMinimumAngleForTool, x is out of range 0-180", x, "No value remembered");
     }
@@ -267,6 +276,7 @@ void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
     if (b >= 0 && b <= 180) {
         uint8_t maxB = static_cast<uint8_t>(b);
         EEPROM.put(offset, maxB);
+        debugLog("Current b mininum", getMaximumAngleB(tool));
     } else {
         debugLog("In rememberMaximumAngleForTool, b is out of range 0-180", b, "No value remembered");
     }
@@ -277,6 +287,7 @@ void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
     if (c >= 0 && c <= 180) {
       uint8_t maxC = static_cast<uint8_t>(c);
       EEPROM.put(offset + sizeof(uint8_t), maxC);
+      debugLog("Current c mininum", getMaximumAngleC(tool));
     } else {
       debugLog("In rememberMaximumAngleForTool, c is out of range 0-180", c, "No value remembered");
     }
@@ -287,6 +298,7 @@ void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
     if (x >= 0 && x <= 180) {
       uint8_t maxX = static_cast<uint8_t>(x);
       EEPROM.put(offset + sizeof(uint8_t) * 2, maxX);
+      debugLog("Current x mininum", getMaximumAngleX(tool));
     } else {
       debugLog("In rememberMaximumAngleForTool, x is out of range 0-180", x, "No value remembered");
     }
@@ -297,11 +309,11 @@ void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
 int ChromatoforeFilamentChanger::getMinimumAngleB(int tool) {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMinimumAngleB, invalid tool index", tool);
-    return NAN;
+    return -1;
   }
 
   // Calculate the EEPROM offset based on the tool index and named constant
-  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 3);
+  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6);
 
   // Retrieve and return the stored minimum angle for axis B
   uint8_t b;
@@ -312,41 +324,42 @@ int ChromatoforeFilamentChanger::getMinimumAngleB(int tool) {
 int ChromatoforeFilamentChanger::getMinimumAngleC(int tool) {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMinimumAngleC, invalid tool index", tool);
-    return NAN;
+    return -1;
   }
 
   // Calculate the EEPROM offset based on the tool index and named constant
-  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 3);
+  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t);
+
 
   // Retrieve and return the stored minimum angle for axis C
   uint8_t c;
-  EEPROM.get(offset + sizeof(float), c);
+  EEPROM.get(offset, c);
   return c;
 }
 
 int ChromatoforeFilamentChanger::getMinimumAngleX(int tool) {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMinimumAngleX, invalid tool index", tool);
-    return NAN;
+    return -1;
   }
 
   // Calculate the EEPROM offset based on the tool index and named constant
-  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 3);
+  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 2;
 
   // Retrieve and return the stored minimum angle for axis X
   uint8_t x;
-  EEPROM.get(offset + sizeof(float) * 2, x);
+  EEPROM.get(offset, x);
   return x;
 }
 
 int ChromatoforeFilamentChanger::getMaximumAngleB(int tool) {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMaximumAngleB, invalid tool index", tool);
-    return NAN;
+    return -1;
   }
 
   // Calculate the EEPROM offset based on the tool index, named constant, and minimum angle offset
-  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 3) + sizeof(uint8_t);
+  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 3;
 
   // Retrieve and return the stored maximum angle for axis B
   uint8_t b;
@@ -357,30 +370,30 @@ int ChromatoforeFilamentChanger::getMaximumAngleB(int tool) {
 int ChromatoforeFilamentChanger::getMaximumAngleC(int tool) {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMaximumAngleC, invalid tool index", tool);
-    return NAN;
+    return -1;
   }
 
   // Calculate the EEPROM offset based on the tool index, named constant, and minimum angle offset
-  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 3) + sizeof(uint8_t);
+  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 4;
 
   // Retrieve and return the stored maximum angle for axis C
   uint8_t c;
-  EEPROM.get(offset + sizeof(uint8_t), c);
+  EEPROM.get(offset, c);
   return c;
 }
 
 int ChromatoforeFilamentChanger::getMaximumAngleX(int tool) {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMaximumAngleX, invalid tool index", tool);
-    return NAN;
+    return -1;
   }
 
   // Calculate the EEPROM offset based on the tool index, named constant, and minimum angle offset
-  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 3) + sizeof(uint8_t);
+  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 5;
 
   // Retrieve and return the stored maximum angle for axis X
   uint8_t x;
-  EEPROM.get(offset + sizeof(uint8_t) * 2, x);
+  EEPROM.get(offset, x);
   return x;
 }
 
@@ -393,27 +406,8 @@ void ChromatoforeFilamentChanger::initializeEEPROM() {
 
   // Initialize each tool with named constants for each axis
   for (int tool = 0; tool < actuatorArraySize; tool++) {
-    int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6);
-
-    // Store minimum angles
-    {
-        uint8_t b = DEFAULT_MINIMUM_ANGLE_B;
-        EEPROM.put(offset, b);
-        uint8_t c = DEFAULT_MINIMUM_ANGLE_C;
-        EEPROM.put(offset + sizeof(uint8_t), c);
-        uint8_t x = DEFAULT_MINIMUM_ANGLE_X;
-        EEPROM.put(offset + sizeof(uint8_t) * 2, x);
-    }
-
-    // Store maximum angles
-    {   uint8_t b = DEFAULT_MAXIMUM_ANGLE_B;
-        EEPROM.put(offset + sizeof(uint8_t) * 3, b);
-        uint8_t c = DEFAULT_MAXIMUM_ANGLE_C;
-        EEPROM.put(offset + sizeof(uint8_t) * 4, c);
-        uint8_t x = DEFAULT_MAXIMUM_ANGLE_X;
-        EEPROM.put(offset + sizeof(uint8_t) * 5, x);
-    }
-
+    rememberMinimumAngleForTool(tool, DEFAULT_MINIMUM_ANGLE_B, DEFAULT_MINIMUM_ANGLE_C, DEFAULT_MINIMUM_ANGLE_X);
+    rememberMaximumAngleForTool(tool, DEFAULT_MAXIMUM_ANGLE_B, DEFAULT_MAXIMUM_ANGLE_C, DEFAULT_MAXIMUM_ANGLE_X);
   }
 }
 

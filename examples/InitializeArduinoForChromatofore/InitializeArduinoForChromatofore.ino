@@ -45,7 +45,7 @@ void dumpEEPROMValues(const ChromatoforeFilamentChanger& changer) {
 
 void setup() {
   chromatoforeFilamentChanger.begin();  // Needed to get debugLog working!
-  //chromatoforeFilamentChanger.initializeEEPROM();
+  chromatoforeFilamentChanger.initializeEEPROM();
   debugLog("sizeof(chromatoforeFilamentChanger)", sizeof(chromatoforeFilamentChanger));
   dumpEEPROMValues(chromatoforeFilamentChanger);
 
