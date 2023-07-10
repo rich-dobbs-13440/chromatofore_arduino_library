@@ -43,5 +43,5 @@ void setup() {
 
 void loop() {
   changer.loop();
-  delay(1);
+  //delay(1);
 }
