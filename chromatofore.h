@@ -24,7 +24,7 @@ G1 X10 ; Move the pusher servo to an angle of 10 degrees
 
 G10 T1 L0 B11 C12 X40 ; Remember minimum values for the B, C, and X axis angles for tool 1
 
-G10 T2 L1 B100 C1100 X12 ; Remember maximum values for the B, C, and X axis angles for tool 2
+G10 T2 L1 B101 C101 X145 ; Remember maximum values for the B, C, and X axis angles for tool 2
 
 
 The following commands are parsed, but the functionality is not yet implemented:
@@ -46,7 +46,7 @@ G1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.  (Parsed by 
 
 class ChromatoforeFilamentChanger {
  private:
-  String version = "0.1m";
+  String version = "0.1n";
   EarwigFilamentActuator** actuatorArray;
   int actuatorArraySize;
   int baudRate = 9600;

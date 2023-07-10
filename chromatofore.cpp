@@ -276,7 +276,7 @@ void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
     if (b >= 0 && b <= 180) {
         uint8_t maxB = static_cast<uint8_t>(b);
         EEPROM.put(offset, maxB);
-        debugLog("Current b mininum", getMaximumAngleB(tool));
+        debugLog("Current b maximum", getMaximumAngleB(tool));
     } else {
         debugLog("In rememberMaximumAngleForTool, b is out of range 0-180", b, "No value remembered");
     }
@@ -287,7 +287,7 @@ void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
     if (c >= 0 && c <= 180) {
       uint8_t maxC = static_cast<uint8_t>(c);
       EEPROM.put(offset + sizeof(uint8_t), maxC);
-      debugLog("Current c mininum", getMaximumAngleC(tool));
+      debugLog("Current c maximum", getMaximumAngleC(tool));
     } else {
       debugLog("In rememberMaximumAngleForTool, c is out of range 0-180", c, "No value remembered");
     }
@@ -298,7 +298,7 @@ void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
     if (x >= 0 && x <= 180) {
       uint8_t maxX = static_cast<uint8_t>(x);
       EEPROM.put(offset + sizeof(uint8_t) * 2, maxX);
-      debugLog("Current x mininum", getMaximumAngleX(tool));
+      debugLog("Current x maximum", getMaximumAngleX(tool));
     } else {
       debugLog("In rememberMaximumAngleForTool, x is out of range 0-180", x, "No value remembered");
     }
