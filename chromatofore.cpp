@@ -1,4 +1,5 @@
 #include "chromatofore.h"
+#include "debugLog.h"
 
 float nan = sqrt(-1);
 
@@ -127,7 +128,7 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
           debugLog("Handle fixed clamp command. Angle:", b);
           EarwigFilamentActuator *pActuator = getActuator(currentFilament);
           if (pActuator) {
-            float angle = b;
+            int angle = b;
             pActuator->setFixedClampServoAngle(angle);
           } else {
             debugLog("No current actuator found with index:", currentFilament);
@@ -136,7 +137,7 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
           debugLog("Handle clamp command. Angle:", c);
           EarwigFilamentActuator *pActuator = getActuator(currentFilament);
           if (pActuator) {
-            float angle = c;
+            int angle = c;
             pActuator->setMovingClampServoAngle(angle);
           } else {
             debugLog("No current actuator found with index:", currentFilament);

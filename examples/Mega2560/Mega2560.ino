@@ -20,7 +20,7 @@ const int EXTRUDER_ENGAGE_PIN = 11;
 const int FILAMENT_MOVE_PIN_1 = 8;
 const int FILAMENT_CLAMP_PIN_1 = 9;
 const int FILAMENT_ROTATE_PIN_1 = 10;
-const int FILAMENT_FIXED_CLAMP_PIN_1 = 12;
+const int FILAMENT_FIXED_CLAMP_PIN_1 = 7;
 
 
 ChromatoforeFilamentChanger changer(20);
@@ -42,4 +42,5 @@ void setup() {
 
 void loop() {
   changer.loop();
+  delay(1);
 }

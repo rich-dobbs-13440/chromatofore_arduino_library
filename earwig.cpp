@@ -7,7 +7,12 @@ EarwigFilamentActuator::EarwigFilamentActuator(IServo& pusherServo, IServo& movi
 }
 
 void EarwigFilamentActuator::begin() {
-    movingClampServo.write(10);
-    fixedClampServo.write(10);
-    pusherServo.write(80);
+    movingClampServo.begin();
+    fixedClampServo.begin();
+    pusherServo.begin();
+    movingClampServo.write(40);
+    fixedClampServo.write(40);
+    pusherServo.write(40);
+
+    delay(1000);
 }

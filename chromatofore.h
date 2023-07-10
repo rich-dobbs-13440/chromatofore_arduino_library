@@ -4,20 +4,11 @@
 #include <earwig.h>
 #include <string.h>
 
-static const char* logPrefix = "-- debug --";
 
-template <typename T, typename... Args>
-void debugLog(T first, Args... args) {
-  Serial.print(logPrefix);
-  Serial.print(" ");
-  Serial.print(first);
-  ((Serial.print(" "), Serial.print(args)), ...);
-  Serial.println();
-}
 
 class ChromatoforeFilamentChanger {
  private:
-  String version = "0.1e";
+  String version = "0.1g";
   EarwigFilamentActuator** actuatorArray;
   int actuatorArraySize;
   int baudRate = 9600;

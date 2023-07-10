@@ -1,6 +1,9 @@
 #pragma once
 
 #include <Servo.h>
+#include "iServo.h"
+
+#include "debugLog.h"
 
 class StandardServo : public IServo {
  private:
@@ -9,13 +12,18 @@ class StandardServo : public IServo {
   int pin = -1;
 
  public:
-  StandardServo(int pin) : pin(pin) {}
+  StandardServo(int pin) : pin(pin) {  }
 
-  void begin() { servo.attach(pin); }
+  void begin() {
+    debugLog("StandardServo::begin() called.  Pin", pin);
+    servo.attach(pin);
+    debugLog("CurrentAngle", currentAngle);
+  }
 
   void write(int angle) {
     currentAngle = angle;
     servo.write(angle);
+    debugLog("Pin", pin, "currentAngle", currentAngle);
   }
 
   void detach() { servo.detach(); }
