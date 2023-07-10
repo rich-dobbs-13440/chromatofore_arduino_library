@@ -38,6 +38,7 @@ void setup() {
   changer.addActuator(1, &actuator_1);
   changer.setCurrentFilament(1);  // Todo:  Add filament detector to show what filament is loaded.
   changer.begin();
+  debugLog("sizeof(changer)", sizeof(changer));
 }
 
 void loop() {
