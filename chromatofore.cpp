@@ -40,10 +40,16 @@ void ChromatoforeFilamentChanger::begin() {
 
   debugLog("--------------");
   debugLog("Chromatofore Version:", version);
-  debugLog("Upload Date: ", __DATE__);
-  debugLog("Upload Time: ", __TIME__);
-  debugLog("Baud Rate: ", baudRate);
-  debugLog("Millis: ", millis());
+  debugLog("Upload Date:", __DATE__);
+  debugLog("Upload Time:", __TIME__);
+  debugLog("Baud Rate:", baudRate);
+
+  int restartCount = EEPROM.read(0);
+  debugLog("Restart Count:", restartCount);
+  restartCount++;
+  EEPROM.write(0, restartCount);
+
+  debugLog("Millis:", millis());
 
   for (int tool = 0; tool < actuatorArraySize; ++tool) {
     if (actuatorArray[tool] != nullptr) {
@@ -65,7 +71,7 @@ void ChromatoforeFilamentChanger::handleSerial() {
     debugLog("Serial.available() is true");
     while (Serial.available() > 0) {
       char serialChar = Serial.read();
-      debugLog("Received char", serialChar, int(serialChar));
+      if (echoCharacters) debugLog("Received char", serialChar, int(serialChar));
 
       if (serialChar != '\n' && serialChar != '\r') {
         // Add character to the buffer

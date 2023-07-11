@@ -46,7 +46,7 @@ G1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.  (Parsed by 
 
 class ChromatoforeFilamentChanger {
  private:
-  String version = "0.1n";
+  String version = "0.1q";
   EarwigFilamentActuator** actuatorArray;
   int actuatorArraySize;
   int baudRate = 9600;
@@ -65,6 +65,7 @@ class ChromatoforeFilamentChanger {
   int bufferIndex = 0;       // Index to keep track of the buffer position
   int currentFilament = -1;  // None selected
   int nextFilament = -1;     // None selected
+  bool echoCharacters = false;
 
   void handleSerial();
   void processInputBuffer();
