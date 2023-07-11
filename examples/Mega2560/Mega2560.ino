@@ -25,9 +25,9 @@ const int FILAMENT_FIXED_CLAMP_PIN_1 = 7;
 
 ChromatoforeFilamentChanger changer(20);
 
-StandardServo pusherServo1(FILAMENT_MOVE_PIN_1);
-StandardServo movingClampServo1(FILAMENT_CLAMP_PIN_1);
-StandardServo fixedClampServo1(FILAMENT_FIXED_CLAMP_PIN_1);
+StandardServo pusherServo1("pusherServo1", FILAMENT_MOVE_PIN_1);
+StandardServo movingClampServo1("movingClampServo1", FILAMENT_CLAMP_PIN_1);
+StandardServo fixedClampServo1("fixedClampServo1", FILAMENT_FIXED_CLAMP_PIN_1);
 
 EarwigFilamentActuator actuator_1(pusherServo1, movingClampServo1, fixedClampServo1);
 

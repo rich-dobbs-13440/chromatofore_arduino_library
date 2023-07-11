@@ -7,6 +7,7 @@ public:
   virtual void write(int angle) = 0;
   virtual void position(float relativePosition) = 0;
   virtual void detach() = 0;
+  virtual void dump() = 0;
 };
 
 

@@ -7,14 +7,17 @@
 
 class StandardServo : public IServo {
  private:
+  String id;
   Servo servo;
-  int currentAngle = -1;
   int pin = -1;
   int minimumAngle = -1;
-  int maximumAngle = -1;
+  int maximumAngle = -1;    
+  int currentAngle = -1;
+
+
 
  public:
-  StandardServo(int pin) : pin(pin) {}
+  StandardServo(String id, int pin) : id(id), pin(pin) {}
 
   void begin(int minimumAngle, int maximumAngle,
              float initialRelativePosition) {
@@ -31,7 +34,6 @@ class StandardServo : public IServo {
   void write(int angle) {
     currentAngle = angle;
     servo.write(angle);
-    debugLog("Pin", pin, "currentAngle", currentAngle);
   }
 
   void position(float relativePosition) {
@@ -39,4 +41,8 @@ class StandardServo : public IServo {
     write(angle);
   }
   void detach() { servo.detach(); }
+
+  void dump() {
+    debugLog("id:", id, "pin:", pin, "minimumAngle:", minimumAngle, "maximumAngle:", maximumAngle, "currentAngle:", currentAngle);
+  }
 };

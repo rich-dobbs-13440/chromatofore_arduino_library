@@ -144,41 +144,42 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
   // debugLog("e:", e);
   // debugLog("f:", f);
   // debugLog("g:", g);
-
+  EarwigFilamentActuator *pActuator = getActuator(currentFilament);
   if (!isnan(g)) {
     switch (int(g)) {
       case 1:  // Linear interpolation movement
         if (!isnan(b)) {
-          debugLog("Handle fixed clamp command. Angle:", b);
-          EarwigFilamentActuator *pActuator = getActuator(currentFilament);
           if (pActuator) {
+            debugLog("Handle fixed clamp command. Angle:", b);
             int angle = b;
             pActuator->setFixedClampServoAngle(angle);
           } else {
-            debugLog("No current actuator found with index:", currentFilament);
+            debugLog("Can't handle fixed clamp command. Angle:", b, "No current actuator found with index:", currentFilament);
           }
         } else if (!isnan(c)) {
-          debugLog("Handle clamp command. Angle:", c);
-          EarwigFilamentActuator *pActuator = getActuator(currentFilament);
           if (pActuator) {
+            debugLog("Handle clamp command. Angle:", c);
             int angle = c;
             pActuator->setMovingClampServoAngle(angle);
           } else {
-            debugLog("No current actuator found with index:", currentFilament);
+            debugLog("Can't handle clamp command. Angle:", "No current actuator found with index:", currentFilament);
           }
         } else if (!isnan(e)) {
-          debugLog("Handle extrusion command.");
-          float mm_of_filament = e;
-          float feedrate_mm_per_minute = f;
-          // extrude(mm_of_filament, feedrate_mm_per_minute);
-        } else if (!isnan(x)) {
-          debugLog("Handle move command. Angle:", x);
-          EarwigFilamentActuator *pActuator = getActuator(currentFilament);
           if (pActuator) {
+            debugLog("Handle extrusion command. e:", e, "f:", f);
+            float mm_of_filament = e;
+            float feedrate_mm_per_minute = f;
+            pActuator->extrude(mm_of_filament, feedrate_mm_per_minute);
+          } else {
+            debugLog("Can't handle extrusion command. e:", e, "f:", f, "No current actuator found with index:", currentFilament);
+          }
+        } else if (!isnan(x)) {
+          if (pActuator) {
+            debugLog("Handle move command. Angle:", x);
             int angle = x;
             pActuator->setPusherServoAngle(angle);
           } else {
-            debugLog("No current actuator found with index:", currentFilament);
+            debugLog("Can't handle move command. Angle:", x, "No current actuator found with index:", currentFilament);
           }
         } else {
           debugLog("Unknown G1 command");
