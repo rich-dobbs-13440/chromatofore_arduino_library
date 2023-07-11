@@ -20,6 +20,7 @@ class EarwigFilamentActuator {
   void extrude(float mmOfFilament, float mmPerMinuteFeedrate);
   float calculateExtrusionAmount(float startPosition, float endPosition);
   float calculateEndPosition(float startPosition); 
+  void home(float fixedClamp, float movingClamp, float pusher);
  private:
   IServo& pusherServo;
   IServo& movingClampServo;

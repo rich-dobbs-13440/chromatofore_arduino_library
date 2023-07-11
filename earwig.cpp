@@ -116,20 +116,24 @@ void EarwigFilamentActuator::extrude(float mmOfFilament,
   }
 }
 
-// float pusherStartMosition = mmOfFilament > 0 ? FRONT_POSITION :
-// BACK_POSITION; float pusherEndPosition = mmOfFilament > 0 ? BACK_POSITION :
-// FRONT_POSITION;
+void EarwigFilamentActuator::home(float fixedClamp, float movingClamp, float pusher) {
+  // The arguments are either nan or a value.  The exact value is ignored.  
+  if (isnan(fixedClamp) && isnan(movingClamp) && isnan(pusher)) {
+    // Home all axes if no additional parameters given
+    fixedClampServo.position(OPEN_POSITION);
+    movingClampServo.position(OPEN_POSITION);
+    pusherServo.position(FRONT_POSITION);    
+  } else {
+    if (!isnan(fixedClamp)) {
+      fixedClampServo.position(OPEN_POSITION);
+    }
+    if (!isnan(movingClamp)) {
+      movingClampServo.position(OPEN_POSITION);
+    }
+    if (!isnan(pusher)) {
+      pusherServo.position(FRONT_POSITION);
+    }
+  }
 
-// delay(clampingDelayMillis);
-// fixedClampServo.dump();
-// movingClampServo.position(OPEN_POSITION);
-// fixedClampServo.position(CLOSED_POSITION);
-// delay(clampingDelayMillis);
-// movingClampServo.dump();
-// pusherServo.position(pusherStartMosition);
-// delay(movementDelayMillis);
-// pusherServo.dump();
-// fixedClampServo.position(OPEN_POSITION);
-// movingClampServo.position(CLOSED_POSITION);
-// delay(clampingDelayMillis);
-// pusherServo.position(pusherEndPosition);
+}
+

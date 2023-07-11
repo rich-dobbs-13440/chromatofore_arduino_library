@@ -147,10 +147,12 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
     }
     token = strtok(NULL, &delimiter);
   }
-  // debugLog("c:", c);
+  debugLog("b:", b);
+  debugLog("c:", c);
   // debugLog("e:", e);
   // debugLog("f:", f);
-  // debugLog("g:", g);
+  debugLog("g:", g);
+  debugLog("x:", x);
   EarwigFilamentActuator *pActuator = getActuator(currentFilament);
   if (!isnan(g)) {
     switch (int(g)) {
@@ -199,20 +201,27 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
         break;
       case 10:  //
         debugLog("Handle programmable data input command");
-        int tool = t;
-        int choice = l;
-        if (choice == 0) {
-          rememberMinimumAngleForTool(tool, b, c, x);
-        } else if (choice == 1) {
-          rememberMaximumAngleForTool(tool, b, c, x);
-        } else {
-          debugLog("Unrecognize l value for programmable data input command");
+        {
+          int tool = t;
+          int choice = l;
+          if (choice == 0) {
+            rememberMinimumAngleForTool(tool, b, c, x);
+          } else if (choice == 1) {
+            rememberMaximumAngleForTool(tool, b, c, x);
+          } else {
+            debugLog("Unrecognized l value for programmable data input command");
+          }
         }
         break;
       case 28:
+        debugLog("Handle home command");
         // Home axis
-        if (c != 0) {
-          // home_clamp_servo();
+        if (pActuator) {
+          debugLog("Handle home command. b:", b, "c:", c, "x:", x);
+          pActuator->home(b, c, x);
+        } else {
+          debugLog("Can't handle home command. b:", b, "c:", c, "x:", x,
+                   "No current actuator found with index:", currentFilament);
         }
         break;
       default:

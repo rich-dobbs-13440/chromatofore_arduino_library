@@ -26,9 +26,10 @@ G10 T1 L0 B11 C12 X40 ; Remember minimum values for the B, C, and X axis angles 
 
 G10 T2 L1 B101 C101 X145 ; Remember maximum values for the B, C, and X axis angles for tool 2
 
+G28 B C X ; Home all axes, say for loading or unloading filament.
 
 The following commands are parsed, but the functionality is not yet implemented:
-G28 C0 : Move clamp servo to home position signaled by limit switch.  
+
 
 G1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.  (Parsed by functionality is not yet implemented in the actuator!)
 
@@ -46,7 +47,7 @@ G1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.  (Parsed by 
 
 class ChromatoforeFilamentChanger {
  private:
-  String version = "0.1r";
+  String version = "0.1t";
   EarwigFilamentActuator** actuatorArray;
   int actuatorArraySize;
   int baudRate = 9600;
