@@ -64,14 +64,21 @@ void ChromatoforeFilamentChanger::begin() {
   }
 }
 
-void ChromatoforeFilamentChanger::loop() { handleSerial(); }
+void ChromatoforeFilamentChanger::loop() {
+  EarwigFilamentActuator *pActuator = getActuator(currentFilament);
+  if (pActuator) {
+    pActuator->loop();
+  }
+  handleSerial();
+}
 
 void ChromatoforeFilamentChanger::handleSerial() {
   if (Serial.available() > 0) {
     debugLog("Serial.available() is true");
     while (Serial.available() > 0) {
       char serialChar = Serial.read();
-      if (echoCharacters) debugLog("Received char", serialChar, int(serialChar));
+      if (echoCharacters)
+        debugLog("Received char", serialChar, int(serialChar));
 
       if (serialChar != '\n' && serialChar != '\r') {
         // Add character to the buffer
@@ -154,7 +161,8 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
             int angle = b;
             pActuator->setFixedClampServoAngle(angle);
           } else {
-            debugLog("Can't handle fixed clamp command. Angle:", b, "No current actuator found with index:", currentFilament);
+            debugLog("Can't handle fixed clamp command. Angle:", b,
+                     "No current actuator found with index:", currentFilament);
           }
         } else if (!isnan(c)) {
           if (pActuator) {
@@ -162,7 +170,8 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
             int angle = c;
             pActuator->setMovingClampServoAngle(angle);
           } else {
-            debugLog("Can't handle clamp command. Angle:", "No current actuator found with index:", currentFilament);
+            debugLog("Can't handle clamp command. Angle:",
+                     "No current actuator found with index:", currentFilament);
           }
         } else if (!isnan(e)) {
           if (pActuator) {
@@ -171,7 +180,8 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
             float feedrate_mm_per_minute = f;
             pActuator->extrude(mm_of_filament, feedrate_mm_per_minute);
           } else {
-            debugLog("Can't handle extrusion command. e:", e, "f:", f, "No current actuator found with index:", currentFilament);
+            debugLog("Can't handle extrusion command. e:", e, "f:", f,
+                     "No current actuator found with index:", currentFilament);
           }
         } else if (!isnan(x)) {
           if (pActuator) {
@@ -179,7 +189,8 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
             int angle = x;
             pActuator->setPusherServoAngle(angle);
           } else {
-            debugLog("Can't handle move command. Angle:", x, "No current actuator found with index:", currentFilament);
+            debugLog("Can't handle move command. Angle:", x,
+                     "No current actuator found with index:", currentFilament);
           }
         } else {
           debugLog("Unknown G1 command");

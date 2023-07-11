@@ -13,22 +13,22 @@ class EarwigFilamentActuator {
   void begin(int minimumFixedClampServoAngle, int maximumFixedClampServoAngle,
              int minimumMovingClampServoAngle, int maximumMovingClampServoAngle,
              int minumPusherServoAngle, int maximumPusherServoAngle);
+  void loop();
   void setPusherServoAngle(int angle) { pusherServo.write(angle); }
   void setMovingClampServoAngle(int angle) { movingClampServo.write(angle); }
   void setFixedClampServoAngle(int angle) { fixedClampServo.write(angle); }
   void extrude(float mmOfFilament, float mmPerMinuteFeedrate);
-
-  //void extendFilament(float mm_of_filament);     
-  //void retractFilament(float mm_of_filament);  
-  // bool isLoaded();        // Method to check if the filament is extended
-  // void loadFilament();
-  // void unloadFilament();
-  // void releaseClamps();
+  float calculateExtrusionAmount(float startPosition, float endPosition);
+  float calculateEndPosition(float startPosition); 
  private:
-  // bool isFilamentLoaded;  // Flag to indicate the filament status
   IServo& pusherServo;
   IServo& movingClampServo;
   IServo& fixedClampServo;
   float clampingDelayMillis;
   float movementDelayMillis;
+  float mmToExtrude;
+  //int state;
+  String state;  // For development
+  unsigned long nextActionMillis;
+
 };
