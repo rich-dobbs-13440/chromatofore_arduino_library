@@ -172,7 +172,7 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
             int angle = c;
             pActuator->setMovingClampServoAngle(angle);
           } else {
-            debugLog("Can't handle clamp command. Angle:",
+            debugLog("Can't handle clamp command. Angle:", c,
                      "No current actuator found with index:", currentFilament);
           }
         } else if (!isnan(e)) {
