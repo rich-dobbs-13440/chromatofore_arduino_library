@@ -26,7 +26,7 @@ void scanI2CDevices() {
     byte error = Wire.endTransmission();
 
     if (error == 0) {
-      Serial.print("PCA9685 servo driver board found at address 0x");
+      Serial.print("\nPCA9685 servo driver board found at address 0x");
       Serial.print(address, HEX);
       Serial.println();
       foundDevices++;
@@ -41,7 +41,7 @@ void scanI2CDevices() {
     byte error = Wire.endTransmission();
 
     if (error == 0) {
-      Serial.print("PCF8574 GPIO multiplexer found at address 0x");
+      Serial.print("\nPCF8574 GPIO multiplexer found at address 0x");
       Serial.print(address, HEX);
       Serial.println();
       foundDevices++;
