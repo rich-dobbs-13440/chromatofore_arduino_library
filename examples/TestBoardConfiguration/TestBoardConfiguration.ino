@@ -1,6 +1,61 @@
 #include <Wire.h>
 
-void scanI2CDevices();
+const int MAX_DEVICES_PER_BOARD = 5; // Maximum number of devices per board
+const int MAX_BOARDS = 5; // Maximum number of boards
+
+class I2CConfig {
+public:
+  I2CConfig() {
+    reset();
+  }
+
+  void addBoard(int boardAddress, byte deviceAddress) {
+    if (numBoards < MAX_BOARDS) {
+      boards[numBoards++] = boardAddress;
+      if (numDevicesPerBoard[boardAddress] < MAX_DEVICES_PER_BOARD) {
+        devices[boardAddress][numDevicesPerBoard[boardAddress]++] = deviceAddress;
+      }
+    }
+  }
+
+  void printConfig() {
+    Serial.println("I2C bus configuration:");
+    for (int i = 0; i < numBoards; i++) {
+      Serial.print("Board at address 0x");
+      Serial.println(boards[i], HEX);
+      Serial.println("Devices:");
+      for (int j = 0; j < numDevicesPerBoard[boards[i]]; j++) {
+        Serial.print("  - Device at address 0x");
+        Serial.println(devices[boards[i]][j], HEX);
+      }
+      Serial.println();
+    }
+  }
+
+  void reset() {
+    numBoards = 0;
+    for (int i = 0; i < MAX_BOARDS; i++) {
+      numDevicesPerBoard[i] = 0;
+      for (int j = 0; j < MAX_DEVICES_PER_BOARD; j++) {
+        devices[i][j] = 0;
+      }
+    }
+  }
+
+  int getNumBoards() const {
+    return numBoards;
+  }  
+
+private:
+  int boards[MAX_BOARDS];
+  byte devices[MAX_BOARDS][MAX_DEVICES_PER_BOARD];
+  int numBoards;
+  int numDevicesPerBoard[MAX_BOARDS];
+};
+
+I2CConfig i2cConfig;
+
+I2CConfig scanI2CDevices();
 void processSerialInput();
 
 void setup() {
@@ -29,10 +84,16 @@ void processSerialInput() {
       char *command = strtok(inputBuffer, " ");
       if (command != NULL) {
         if (strcmp(command, "scanI2CDevices") == 0) {
-          scanI2CDevices();
+          i2cConfig = scanI2CDevices(); // Perform scan and store the configuration
+        } else if (strcmp(command, "printConfig") == 0) {
+          if (i2cConfig.getNumBoards() == 0) {
+            i2cConfig = scanI2CDevices(); // Perform scan if the configuration is not available
+          }
+          i2cConfig.printConfig(); // Print the configuration
         } else {
-          Serial.println("Unknown command. The grammar is as follows:");
-          Serial.println("scanI2CDevices - Scan for I2C devices");
+          Serial.println("Unknown command. The available commands are:");
+          Serial.println("- scanI2CDevices: Scan for I2C devices");
+          Serial.println("- printConfig: Print the I2C bus configuration");
         }
       }
     } else {
@@ -46,8 +107,8 @@ void processSerialInput() {
   }
 }
 
-void scanI2CDevices() {
-  Serial.println("Scanning I2C devices...");
+I2CConfig scanI2CDevices() {
+  I2CConfig i2cConfig; // Create an instance of the I2CConfig class
 
   byte foundDevices = 0;
 
@@ -60,6 +121,7 @@ void scanI2CDevices() {
       Serial.print("\nPCA9685 servo driver board found at address 0x");
       Serial.print(address, HEX);
       Serial.println();
+      i2cConfig.addBoard(0x40, address); // Add to the I2CConfig instance
       foundDevices++;
     } else {
       Serial.print(".");
@@ -75,6 +137,7 @@ void scanI2CDevices() {
       Serial.print("\nPCF8574 GPIO multiplexer found at address 0x");
       Serial.print(address, HEX);
       Serial.println();
+      i2cConfig.addBoard(0x20, address); // Add to the I2CConfig instance
       foundDevices++;
     } else {
       Serial.print(".");
@@ -88,5 +151,7 @@ void scanI2CDevices() {
     Serial.print(foundDevices);
     Serial.println(" device(s) on the I2C bus");
   }
+
+  return i2cConfig; // Return the I2CConfig instance
 }
 
