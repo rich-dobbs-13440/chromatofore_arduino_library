@@ -1,99 +1,256 @@
 #include <Wire.h>
+#include <PCF8574.h>
+#include <Adafruit_PWMServoDriver.h>
 
-const int MAX_DEVICES_PER_BOARD = 5; // Maximum number of devices per board
-const int MAX_BOARDS = 5; // Maximum number of boards
+const int MAX_DEVICES_PER_BOARD_TYPE = 8;  // Maximum number of devices per board
+const int MAX_BOARD_TYPES = 2;             // Maximum number of boards
+
+PCF8574 pcf8574(0x22);
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x4);
+
+// Depending on your servo make, the pulse width min and max may vary, you 
+// want these to be as small/large as possible without hitting the hard stop
+// for max range. You'll have to tweak them as necessary to match the servos you
+// have!
+#define SERVOMIN  150 // This is the 'minimum' pulse length count (out of 4096)
+#define SERVOMAX  600 // This is the 'maximum' pulse length count (out of 4096)
+#define USMIN  600 // This is the rounded 'minimum' microsecond length based on the minimum pulse of 150
+#define USMAX  2400 // This is the rounded 'maximum' microsecond length based on the maximum pulse of 600
+#define SERVO_FREQ 50 // Analog servos run at ~50 Hz updates
+
+unsigned long timeElapsed;
+
+enum BoardType {
+  PCA9685_ServoDriver = 0,
+  PCF8574_GPIO_Multiplexer = 1,
+  // Add more board types here if needed
+};
+
+class Board {
+public:
+  virtual void initialize() = 0;
+  virtual void printConfig() = 0;
+};
+
+class PCA9685ServoDriver : public Board {
+public:
+  PCA9685ServoDriver(byte i2cAddress)
+    : i2cAddress(i2cAddress) {}
+  void initialize() override {
+    // Implementation specific to PCA9685 Servo Driver board initialization
+    // Initialize servo driver board here
+  }
+  void printConfig() override {
+    Serial.print("PCA9685ServoDriver, I2C address: 0x");
+    Serial.println(i2cAddress, HEX);
+  }
+  // Add other PCA9685 specific methods or properties here
+private:
+  byte i2cAddress;
+};
+
+class PCF8574GPIOMultiplexer : public Board {
+public:
+  PCF8574GPIOMultiplexer(byte i2cAddress)
+    : i2cAddress(i2cAddress) {}
+  void initialize() override {
+    // Initialize Wire library and set the pin configuration of the PCF8574
+    Wire.begin();
+    Wire.beginTransmission(i2cAddress);
+    Wire.write(0xFF);  // Set all pins as inputs (high impedance)
+    Wire.endTransmission();
+  }
+  void printConfig() override {
+    Serial.print("PCF8574GPIOMultiplexer, I2C address: 0x");
+    Serial.println(i2cAddress, HEX);
+  }
+  bool readPin(byte pinNumber) {
+    if (pinNumber >= 0 && pinNumber < 8) {
+      // Read the state of all pins from the PCF8574
+      Wire.requestFrom(i2cAddress, static_cast<int>(1));
+      if (Wire.available()) {
+        byte pinStates = Wire.read();
+
+        // Extract the state of the specified pin (0 = LOW, 1 = HIGH)
+        return bitRead(pinStates, pinNumber);
+      } else {
+        Serial.println("Wire.available() is false!");
+      }
+
+    }
+
+    // If the pin number is invalid, return false
+    return false;
+  }
+private:
+  byte i2cAddress;
+};
 
 class I2CConfig {
 public:
   I2CConfig() {
-    reset();
+    for (int i = 0; i < MAX_BOARD_TYPES; i++) {
+      for (int j = 0; j < MAX_DEVICES_PER_BOARD_TYPE; j++) {
+        boards[i][j] = nullptr;
+      }
+      boardCount[i] = 0;
+    }
   }
 
-  void addBoard(int boardAddress, byte deviceAddress) {
-    if (numBoards < MAX_BOARDS) {
-      boards[numBoards++] = boardAddress;
-      if (numDevicesPerBoard[boardAddress] < MAX_DEVICES_PER_BOARD) {
-        devices[boardAddress][numDevicesPerBoard[boardAddress]++] = deviceAddress;
+  bool addBoard(BoardType type, byte i2cAddress) {
+    if (type == BoardType::PCA9685_ServoDriver) {
+      if (boardCount[BoardType::PCA9685_ServoDriver] < MAX_DEVICES_PER_BOARD_TYPE) {
+        PCA9685ServoDriver* pBoard = new PCA9685ServoDriver(i2cAddress);
+        pBoard->initialize();
+        boards[BoardType::PCA9685_ServoDriver][boardCount[BoardType::PCA9685_ServoDriver]] = pBoard;
+        boardCount[BoardType::PCA9685_ServoDriver]++;
+        return true;
+      } else {
+        Serial.println("Too many PCA9685 Servo Drivers, can't add another one.");
+        return false;
+      }
+    } else if (type == BoardType::PCF8574_GPIO_Multiplexer) {
+      if (boardCount[BoardType::PCA9685_ServoDriver] < MAX_DEVICES_PER_BOARD_TYPE) {
+        PCF8574GPIOMultiplexer* pBoard = new PCF8574GPIOMultiplexer(i2cAddress);
+        boards[BoardType::PCF8574_GPIO_Multiplexer][boardCount[BoardType::PCF8574_GPIO_Multiplexer]] = pBoard;
+        boardCount[BoardType::PCF8574_GPIO_Multiplexer]++;
+        return true;
+      } else {
+        Serial.println("Too many PCF8574 GPIO_Multiplexers, can't add another one.");
+        return false;
       }
     }
+    Serial.print("Unknown board type: ");
+    Serial.println(type);
   }
 
   void printConfig() {
     Serial.println("I2C bus configuration:");
-    for (int i = 0; i < numBoards; i++) {
-      Serial.print("Board at address 0x");
-      Serial.println(boards[i], HEX);
-      Serial.println("Devices:");
-      for (int j = 0; j < numDevicesPerBoard[boards[i]]; j++) {
-        Serial.print("  - Device at address 0x");
-        Serial.println(devices[boards[i]][j], HEX);
+    for (int i = 0; i < MAX_BOARD_TYPES; i++) {
+      for (int j = 0; j < boardCount[i]; j++) {
+        Serial.print("Board: [");
+        Serial.print(i);
+        Serial.print("][");
+        Serial.print(j);
+        Serial.print("]: pointer: ");
+
+        Serial.print(reinterpret_cast<int>(boards[i][j]), HEX);
+        Serial.print(" ");
+        boards[i][j]->printConfig();
       }
-      Serial.println();
     }
   }
 
   void reset() {
-    numBoards = 0;
-    for (int i = 0; i < MAX_BOARDS; i++) {
-      numDevicesPerBoard[i] = 0;
-      for (int j = 0; j < MAX_DEVICES_PER_BOARD; j++) {
-        devices[i][j] = 0;
+    for (int i = 0; i < MAX_BOARD_TYPES; i++) {
+      for (int j = 0; j < boardCount[i]; j++) {
+        delete boards[i][j];
       }
+      boardCount[i] = 0;
     }
   }
 
-  int getNumBoards() const {
-    return numBoards;
-  }  
+  void setScanned() {
+    scanned = true;
+  }
+
+  bool isScanned() {
+    return scanned;
+  }
+
+  PCF8574GPIOMultiplexer* GetGPIOMultiplexer(int index) {
+    if (index < boardCount[BoardType::PCF8574_GPIO_Multiplexer]) {
+      return static_cast<PCF8574GPIOMultiplexer*>(boards[BoardType::PCF8574_GPIO_Multiplexer][index]);
+    } else {
+      return nullptr;
+    }
+  }
+
 
 private:
-  int boards[MAX_BOARDS];
-  byte devices[MAX_BOARDS][MAX_DEVICES_PER_BOARD];
-  int numBoards;
-  int numDevicesPerBoard[MAX_BOARDS];
+  Board* boards[MAX_BOARD_TYPES][MAX_DEVICES_PER_BOARD_TYPE];
+  int boardCount[MAX_BOARD_TYPES];
+  bool scanned = false;
 };
 
 I2CConfig i2cConfig;
 
 I2CConfig scanI2CDevices();
-void processSerialInput();
-
-void setup() {
-  Wire.begin(); // Initialize I2C bus
-  Serial.begin(9600); // Initialize serial communication
-  delay(2000); // Give some time for the serial monitor to open
-
-  Serial.println("Type 'scanI2CDevices' and press Enter to scan for I2C devices.");
-}
-
-void loop() {
-  processSerialInput();
-  // Your other main code here (if any)
-}
 void processSerialInput() {
-  static char inputBuffer[64]; // Buffer to hold the input string
+  static char inputBuffer[64];  // Buffer to hold the input string
   static byte index = 0;
 
   while (Serial.available()) {
     char c = Serial.read();
     if (c == '\n') {
-      inputBuffer[index] = '\0'; // Null-terminate the input string
-      index = 0; // Reset the index for the next command
+      inputBuffer[index] = '\0';  // Null-terminate the input string
+      index = 0;                  // Reset the index for the next command
 
       // Process the command using strtok
-      char *command = strtok(inputBuffer, " ");
+      char* command = strtok(inputBuffer, " ");
       if (command != NULL) {
-        if (strcmp(command, "scanI2CDevices") == 0) {
-          i2cConfig = scanI2CDevices(); // Perform scan and store the configuration
-        } else if (strcmp(command, "printConfig") == 0) {
-          if (i2cConfig.getNumBoards() == 0) {
-            i2cConfig = scanI2CDevices(); // Perform scan if the configuration is not available
+        if (strcmp(command, "scan") == 0) {
+          i2cConfig = scanI2CDevices();  // Perform scan and store the configuration
+        } else if (strcmp(command, "print") == 0) {
+          if (i2cConfig.isScanned()) {
+            i2cConfig = scanI2CDevices();  // Perform scan if the configuration is not available
           }
-          i2cConfig.printConfig(); // Print the configuration
+          i2cConfig.printConfig();  // Print the configuration
+        } else if (strcmp(command, "readPin") == 0) {
+          // Parse the board index and pin number from the input using strtok
+          char* boardIndexStr = strtok(NULL, " ");
+          char* pinNumberStr = strtok(NULL, " ");
+          if (boardIndexStr != NULL && pinNumberStr != NULL) {
+            int boardIndex = atoi(boardIndexStr);
+            int pinNumber = atoi(pinNumberStr);
+            if (boardIndex >= 0 && pinNumber >= 0) {
+              PCF8574GPIOMultiplexer* gpioMultiplexer = i2cConfig.GetGPIOMultiplexer(boardIndex);
+              if (gpioMultiplexer) {
+                bool pinState = gpioMultiplexer->readPin(pinNumber);
+                Serial.print("GPIO Pin ");
+                Serial.print(pinNumber);
+                Serial.print(" on board index ");
+                Serial.print(boardIndex);
+                Serial.print(" is: ");
+                Serial.println(pinState ? "HIGH" : "LOW");
+              } else {
+                Serial.println("Invalid board index.");
+              }
+            } else {
+              Serial.println("Invalid input. Usage: readGPIOPin <boardIndex> <pinNumber>");
+            }
+          } else {
+            Serial.println("Invalid input. Usage: readGPIOPin <boardIndex> <pinNumber>");
+          }
+        } else if (strcmp(command, "readPins") == 0) {
+          char* boardIndexStr = strtok(NULL, " ");
+          if (boardIndexStr != NULL) {
+            int boardIndex = atoi(boardIndexStr);
+            if (boardIndex >= 0) {
+              PCF8574GPIOMultiplexer* gpioMultiplexer = i2cConfig.GetGPIOMultiplexer(boardIndex);
+              if (gpioMultiplexer) {
+                for (int pinNumber = 0; pinNumber < 8; pinNumber++) {
+                  bool pinState = gpioMultiplexer->readPin(pinNumber);
+                  Serial.print("GPIO Pin ");
+                  Serial.print(pinNumber);
+                  Serial.print(" on board index ");
+                  Serial.print(boardIndex);
+                  Serial.print(" is: ");
+                  Serial.println(pinState ? "HIGH" : "LOW");
+                }
+              } else {
+                Serial.println("Invalid board index.");
+              }
+            } else {
+              Serial.println("Invalid input. Usage: readPins <boardIndex>");
+            }
+          } else {
+            Serial.println("Invalid input. Usage: readGPIOPin <boardIndex> <pinNumber>");
+          }
         } else {
-          Serial.println("Unknown command. The available commands are:");
-          Serial.println("- scanI2CDevices: Scan for I2C devices");
-          Serial.println("- printConfig: Print the I2C bus configuration");
+          Serial.print("Unknown command:");
+          Serial.println(inputBuffer);
+          printHelp();
         }
       }
     } else {
@@ -107,8 +264,10 @@ void processSerialInput() {
   }
 }
 
+
+
 I2CConfig scanI2CDevices() {
-  I2CConfig i2cConfig; // Create an instance of the I2CConfig class
+  I2CConfig i2cConfig;  // Create an instance of the I2CConfig class
 
   byte foundDevices = 0;
 
@@ -121,7 +280,7 @@ I2CConfig scanI2CDevices() {
       Serial.print("\nPCA9685 servo driver board found at address 0x");
       Serial.print(address, HEX);
       Serial.println();
-      i2cConfig.addBoard(0x40, address); // Add to the I2CConfig instance
+      i2cConfig.addBoard(PCA9685_ServoDriver, address);  // Add to the I2CConfig instance
       foundDevices++;
     } else {
       Serial.print(".");
@@ -137,7 +296,7 @@ I2CConfig scanI2CDevices() {
       Serial.print("\nPCF8574 GPIO multiplexer found at address 0x");
       Serial.print(address, HEX);
       Serial.println();
-      i2cConfig.addBoard(0x20, address); // Add to the I2CConfig instance
+      i2cConfig.addBoard(PCF8574_GPIO_Multiplexer, address);  // Add to the I2CConfig instance
       foundDevices++;
     } else {
       Serial.print(".");
@@ -151,7 +310,113 @@ I2CConfig scanI2CDevices() {
     Serial.print(foundDevices);
     Serial.println(" device(s) on the I2C bus");
   }
+  i2cConfig.setScanned();
 
-  return i2cConfig; // Return the I2CConfig instance
+  return i2cConfig;  // Return the I2CConfig instance
 }
 
+
+void printHelp() {
+  Serial.println("The available commands are:");
+  Serial.println("- scan: Scan for I2C devices");
+  Serial.println("- print: Print the I2C bus configuration");
+  Serial.println("- readPin <boardIndex> <pinNumber> : Reads a pin given the board index and pin number");
+  Serial.println("- readPins <boardIndex> : Reads all pins given the board index");
+}
+
+
+
+void setup() {
+  Wire.begin();        // Initialize I2C bus
+  Serial.begin(9600);  // Initialize serial communication
+  delay(2000);         // Give some time for the serial monitor to open
+
+  printHelp();
+
+  pcf8574.pinMode(P0, INPUT);
+	pcf8574.pinMode(P1, INPUT);
+	pcf8574.pinMode(P2, INPUT); 
+  pcf8574.pinMode(P3, INPUT); 
+  pcf8574.pinMode(P4, INPUT); 
+  pcf8574.pinMode(P5, INPUT); 
+  pcf8574.pinMode(P6, INPUT); 
+  pcf8574.pinMode(P7, INPUT); 
+
+	Serial.print("Init pcf8574...");
+	if (pcf8574.begin()){
+		Serial.println("OK");
+	}else{
+		Serial.println("KO");
+	} 
+
+  pwm.begin();
+  pwm.setOscillatorFrequency(27000000);
+  pwm.setPWMFreq(SERVO_FREQ);  // Analog servos run at ~50 Hz updates     
+
+  timeElapsed = millis();
+
+}
+
+void pcf8574Loop() {
+  pcf8574.readBuffer();
+	if (millis()>timeElapsed+2000){
+		// read value on buffer than reset value for that pin
+		uint8_t val = pcf8574.digitalRead(P0);
+		if (val==HIGH) {
+      Serial.print("P0 HIGH  ");
+    } else {
+      Serial.print("P0 LOW   ");
+    }
+    val = pcf8574.digitalRead(P1);
+		if (val==HIGH) {
+      Serial.print("P1 HIGH  ");
+    } else {
+      Serial.print("P1 LOW   ");
+    }   
+    val = pcf8574.digitalRead(P2);
+		if (val==HIGH) {
+      Serial.print("P2 HIGH  ");
+    } else {
+      Serial.print("P2 LOW   ");
+    }  
+    val = pcf8574.digitalRead(P3);
+		if (val==HIGH) {
+      Serial.print("P3 HIGH  ");
+    } else {
+      Serial.print("P3 LOW   ");
+    }  
+    val = pcf8574.digitalRead(P4);
+		if (val==HIGH) {
+      Serial.print("P4 HIGH  ");
+    } else {
+      Serial.print("P4 LOW   ");
+    }  
+    val = pcf8574.digitalRead(P5);
+		if (val==HIGH) {
+      Serial.print("P5 HIGH  ");
+    } else {
+      Serial.print("P5 LOW   ");
+    }              
+    val = pcf8574.digitalRead(P6);
+		if (val==HIGH) {
+      Serial.print("P6 HIGH  ");
+    } else {
+      Serial.print("P6 LOW   ");
+    }  
+    val = pcf8574.digitalRead(P7);
+		if (val==HIGH) {
+      Serial.print("P7 HIGH  ");
+    } else {
+      Serial.print("P7 LOW   ");
+    }  
+    Serial.println();             
+		timeElapsed = millis();
+	}  
+}
+
+
+void loop() {
+  // processSerialInput();
+  pcf8574Loop();
+	
+}
