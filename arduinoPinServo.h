@@ -1,3 +1,9 @@
+/*  Provides a concrete implementation of IServo that is based on the Arduino Servo.h
+    implementation.   It is used for servos that are directly driven via an Arduino GPIO pin.
+
+*/
+
+
 #pragma once
 
 #include <Servo.h>
@@ -5,7 +11,7 @@
 #include "debugLog.h"
 #include "iServo.h"
 
-class StandardServo : public IServo {
+class ArduinoPinServo : public IServo {
  private:
   String id;
   Servo servo;
@@ -17,7 +23,7 @@ class StandardServo : public IServo {
 
 
  public:
-  StandardServo(String id, int pin) : id(id), pin(pin) {}
+  ArduinoPinServo(String id, int pin) : id(id), pin(pin) {}
 
   void begin(int minimumAngle, int maximumAngle,
              float initialRelativePosition) {
