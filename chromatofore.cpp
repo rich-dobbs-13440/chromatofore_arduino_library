@@ -4,7 +4,7 @@
 
 #include "debugLog.h"
 
-float nan = sqrt(-1);
+float float_nan = std::numeric_limits<float>::quiet_NaN();
 
 ChromatoforeFilamentChanger::ChromatoforeFilamentChanger(int size)
     : actuatorArraySize(size) {
@@ -112,14 +112,14 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
   char delimiter = ' ';
   token = strtok(inputBuffer, &delimiter);
 
-  float b = nan;
-  float c = nan;
-  float e = nan;
-  float f = nan;
-  float g = nan;
-  float l = nan;
-  float t = nan;
-  float x = nan;
+  float b = float_nan;
+  float c = float_nan;
+  float e = float_nan;
+  float f = float_nan;
+  float g = float_nan;
+  float l = float_nan;
+  float t = float_nan;
+  float x = float_nan;
 
   // debugLog("e", e);
   while (token != NULL) {

@@ -1,5 +1,4 @@
-#ifndef ISERVO_H
-#define ISERVO_H
+#pragma once
 
 class IServo {
 public:
@@ -10,5 +9,3 @@ public:
   virtual void dump() = 0;
 };
 
-
-#endif
