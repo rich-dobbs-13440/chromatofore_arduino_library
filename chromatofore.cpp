@@ -351,7 +351,7 @@ void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
   }
 }
 
-int ChromatoforeFilamentChanger::getMinimumAngleB(int tool) {
+int ChromatoforeFilamentChanger::getMinimumAngleB(int tool)  const {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMinimumAngleB, invalid tool index", tool);
     return -1;
@@ -366,7 +366,7 @@ int ChromatoforeFilamentChanger::getMinimumAngleB(int tool) {
   return b;
 }
 
-int ChromatoforeFilamentChanger::getMinimumAngleC(int tool) {
+int ChromatoforeFilamentChanger::getMinimumAngleC(int tool)  const {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMinimumAngleC, invalid tool index", tool);
     return -1;
@@ -382,7 +382,7 @@ int ChromatoforeFilamentChanger::getMinimumAngleC(int tool) {
   return c;
 }
 
-int ChromatoforeFilamentChanger::getMinimumAngleX(int tool) {
+int ChromatoforeFilamentChanger::getMinimumAngleX(int tool)  const {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMinimumAngleX, invalid tool index", tool);
     return -1;
@@ -398,7 +398,7 @@ int ChromatoforeFilamentChanger::getMinimumAngleX(int tool) {
   return x;
 }
 
-int ChromatoforeFilamentChanger::getMaximumAngleB(int tool) {
+int ChromatoforeFilamentChanger::getMaximumAngleB(int tool)  const {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMaximumAngleB, invalid tool index", tool);
     return -1;
@@ -415,7 +415,7 @@ int ChromatoforeFilamentChanger::getMaximumAngleB(int tool) {
   return b;
 }
 
-int ChromatoforeFilamentChanger::getMaximumAngleC(int tool) {
+int ChromatoforeFilamentChanger::getMaximumAngleC(int tool) const {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMaximumAngleC, invalid tool index", tool);
     return -1;
@@ -432,7 +432,7 @@ int ChromatoforeFilamentChanger::getMaximumAngleC(int tool) {
   return c;
 }
 
-int ChromatoforeFilamentChanger::getMaximumAngleX(int tool) {
+int ChromatoforeFilamentChanger::getMaximumAngleX(int tool) const {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMaximumAngleX, invalid tool index", tool);
     return -1;

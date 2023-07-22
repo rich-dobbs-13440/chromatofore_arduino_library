@@ -3,20 +3,26 @@
 
 #include <chromatofore.h>
 #include <earwig.h>
-#include <arduinoPinServo.h>>
+#include <arduinoPinServo.h>
+
+#include <Wire.h>
+#include <i2cConfiguration.h>
+
+I2CConfiguration i2cConfiguration;
+
+// Board: [0][0]: PCA9685ServoDriver, I2C address: 0x41
+// Board: [1][0]: PCF8574GPIOMultiplexer, I2C address: 0x22
+// Board: [1][1]: PCF8574GPIOMultiplexer, I2C address: 0x24
 
 
-// Servo pins
+ChromatoforeFilamentChanger changer(20);
 
-const int EXTRUDER_ENGAGE_PIN = 11;
+// Just keep the actuator_1 for compile checks: 
 
 const int FILAMENT_MOVE_PIN_1 = 8;
 const int FILAMENT_CLAMP_PIN_1 = 9;
 const int FILAMENT_ROTATE_PIN_1 = 10;
 const int FILAMENT_FIXED_CLAMP_PIN_1 = 7;
-
-
-ChromatoforeFilamentChanger changer(20);
 
 ArduinoPinServo pusherServo1("pusherServo1", FILAMENT_MOVE_PIN_1);
 ArduinoPinServo movingClampServo1("movingClampServo1", FILAMENT_CLAMP_PIN_1);

@@ -53,7 +53,7 @@ class I2CConfiguration {
     Serial.println(type);
   }
 
-  void printConfig() {
+  void printConfiguration() {
     Serial.println("I2C bus configuration:");
     for (int i = 0; i < MAX_BOARD_TYPES; i++) {
       for (int j = 0; j < boardCount[i]; j++) {
@@ -83,7 +83,7 @@ class I2CConfiguration {
 
   bool isScanned() { return scanned; }
 
-  PCF8574GPIOMultiplexer* GetGPIOMultiplexer(int index) {
+  PCF8574GPIOMultiplexer* getGPIOMultiplexer(int index) {
     if (index < boardCount[BoardType::PCF8574_GPIO_Multiplexer]) {
       return static_cast<PCF8574GPIOMultiplexer*>(
           boards[BoardType::PCF8574_GPIO_Multiplexer][index]);
@@ -92,7 +92,7 @@ class I2CConfiguration {
     }
   }
 
-  PCA9685ServoDriver* GetPCA9685ServoDriver(int index) {
+  PCA9685ServoDriver* getPCA9685ServoDriver(int index) {
     if (index < boardCount[BoardType::PCA9685_ServoDriver]) {
       return static_cast<PCA9685ServoDriver*>(
           boards[BoardType::PCA9685_ServoDriver][index]);
@@ -100,6 +100,17 @@ class I2CConfiguration {
       return nullptr;
     }
   }
+
+   PCA9685ServoDriver* getPca9685ServoDriverFromAddress(int i2cAddress) {
+    for (int index = 0; index < MAX_DEVICES_PER_BOARD_TYPE; index++) {
+      auto driver = static_cast<PCA9685ServoDriver*>(
+          boards[BoardType::PCA9685_ServoDriver][index]);
+      if (driver->getI2cAddress() == i2cAddress) {
+        return driver;
+      }
+    }
+    return nullptr;
+   } 
 
   void scan() {
     reset();
@@ -146,10 +157,19 @@ class I2CConfiguration {
     setScanned();
   }
 
+
+
+  void begin() {
+    Wire.begin();  // Initialize I2C bus
+    Wire.setTimeout(200);
+    delay(2000);  // Give some time for the serial monitor to open
+    scan();
+    printConfiguration();
+  }
+
  private:
-  static const int MAX_DEVICES_PER_BOARD_TYPE =
-      8;                                 // Maximum number of devices per board
-  static const int MAX_BOARD_TYPES = 2;  // Maximum number of boards
+  static const int MAX_DEVICES_PER_BOARD_TYPE = 8;
+  static const int MAX_BOARD_TYPES = 2;
   iBoard* boards[MAX_BOARD_TYPES][MAX_DEVICES_PER_BOARD_TYPE];
   int boardCount[MAX_BOARD_TYPES];
   bool scanned = false;

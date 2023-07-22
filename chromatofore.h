@@ -88,13 +88,13 @@ class ChromatoforeFilamentChanger {
   void rememberMinimumAngleForTool(int tool, float b, float c, float x);
   void rememberMaximumAngleForTool(int tool, float b, float c, float x);
 
-  int getMinimumAngleB(int tool);
-  int getMinimumAngleC(int tool);
-  int getMinimumAngleX(int tool);
+  int getMinimumAngleB(int tool) const;
+  int getMinimumAngleC(int tool) const;
+  int getMinimumAngleX(int tool) const;
 
-  int getMaximumAngleB(int tool);
-  int getMaximumAngleC(int tool);
-  int getMaximumAngleX(int tool);
+  int getMaximumAngleB(int tool) const;
+  int getMaximumAngleC(int tool) const;
+  int getMaximumAngleX(int tool) const;
 
   int getActuatorArraySize() {return actuatorArraySize; } 
 

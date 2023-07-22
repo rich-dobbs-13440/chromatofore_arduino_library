@@ -36,6 +36,9 @@ class PCA9685ServoDriver : public iBoard {
       return false;
     }
   }
+  byte getI2cAddress() const {
+    return i2cAddress;
+  }
  private:
   byte i2cAddress;
   Adafruit_PWMServoDriver pwmServoDriver;

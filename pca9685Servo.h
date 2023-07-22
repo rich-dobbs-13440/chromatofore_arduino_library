@@ -11,24 +11,47 @@
 
 #pragma once
 
-#include <Adafruit_PWMServoDriver.h>
+#include "pca9685ServoDriver.h"
 
 #include <Arduino.h>
 #include "debugLog.h"
 #include "iServo.h"
 
+
+struct Pca9685ServoInfo {
+    int i2cAddress;
+    int pin;
+    int servoIndex;
+};
+
+Pca9685ServoInfo getPca9685ServoInfo(int servoConfiguration[][4], int numRows, int actuator, int role) {
+    for (int servoIndex = 0; servoIndex < numRows; servoIndex++) {
+        if (servoConfiguration[servoIndex][2] == actuator && servoConfiguration[servoIndex][3] == role) {
+            return {servoConfiguration[servoIndex][0], servoConfiguration[servoIndex][1], servoIndex};
+        }
+    }
+
+    // No match found
+    return {-1, -1, -1}; 
+}
+
 class Pca9685PinServo : public IServo {
  private:
   String id;
-  Adafruit_PWMServoDriver& servoDriver;
+  PCA9685ServoDriver* servoDriver;
   int pin = -1;
   int minimumAngle = -1;
   int maximumAngle = -1;
   int currentAngle = -1;
 
  public:
-  Pca9685PinServo(String id, Adafruit_PWMServoDriver& servoDriver, int pin)
-      : id(id), servoDriver(boaservoDriverrd), pin(pin) {}
+  Pca9685PinServo(){}
+  
+  void initialize(String id, PCA9685ServoDriver* servoDriver, int pin) {
+    this->id = id;
+    this->servoDriver = servoDriver;
+    this->pin = pin;
+  }
 
   void begin(int minimumAngle, int maximumAngle,
              float initialRelativePosition) {
@@ -37,21 +60,20 @@ class Pca9685PinServo : public IServo {
              "initialRelativePosition", initialRelativePosition);
     this->minimumAngle = minimumAngle;
     this->maximumAngle = maximumAngle;
-    servo.attach(pin);
     position(initialRelativePosition);
     debugLog("CurrentAngle", currentAngle);
   }
 
   void write(int angle) {
     currentAngle = angle;
-    servo.write(angle);
+
   }
 
   void position(float relativePosition) {
     int angle = minimumAngle + relativePosition * (maximumAngle - minimumAngle);
     write(angle);
   }
-  void detach() { servo.detach(); }
+  void detach() {}
 
   void dump() {
     debugLog("id:", id, "pin:", pin, "minimumAngle:", minimumAngle,

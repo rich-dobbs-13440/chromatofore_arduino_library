@@ -14,6 +14,7 @@ associated filament sensors.
 #include <i2cConfiguration.h>
 
 
+
 I2CConfiguration i2cConfiguration;
 
 
@@ -49,7 +50,7 @@ void processSerialInput(I2CConfiguration& i2cConfiguration) {
           if (!i2cConfiguration.isScanned()) {
             i2cConfiguration.scan();  // Perform scan if the configuration is not available
           }
-          i2cConfiguration.printConfig();  // Print the configuration
+          i2cConfiguration.printConfiguration();  // Print the configuration
         } else if (strcmp(command, "readPin") == 0) {
           if (!i2cConfiguration.isScanned()) {
             i2cConfiguration.scan();  // Perform scan if the configuration is not available
@@ -173,11 +174,7 @@ void processSerialInput(I2CConfiguration& i2cConfiguration) {
 
 void setup() {
   Serial.begin(9600);  // Initialize serial communication
-  Wire.setTimeout(200);
-  Wire.begin();  // Initialize I2C bus  
-  Wire.setTimeout(200);
-  delay(2000);         // Give some time for the serial monitor to open
-  i2cConfiguration.scan();
+  i2cConfiguration.begin();
   printHelp();
 }
 
