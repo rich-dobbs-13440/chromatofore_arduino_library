@@ -1,8 +1,8 @@
-/* 
+/*
 This class implements the overall filament changer object.
 
-The filament changer can be configured and controlled by sending it GCODE over the USB serial
-connection.  
+The filament changer can be configured and controlled by sending it GCODE over
+the USB serial connection.
 
 The axes used for the machine for the Earwig Filament Actuator are:
 
@@ -10,40 +10,46 @@ The axes used for the machine for the Earwig Filament Actuator are:
       Rotation of moving clamp: C
       Location of moving clamp: X
 
-Note that at this time, actual location of the moving clamp is not linear with the X, 
-but is a function of the linkage kinematics.  
+Note that at this time, actual location of the moving clamp is not linear with
+the X, but is a function of the linkage kinematics.
 
 The following GCODE parsing is currently implemented:
 
 
-G1 B10 ; Move the fixed clamp servo to an angle of 10 degrees 
+G1 T0 B10 ; For actuator 0, move the fixed clamp servo to an angle of 10 degrees
 
-G1 C10 ; Move the clamp servo to an angle of 10 degrees
+G1 T1 C10 ; For actuator 1, Move the clamp servo to an angle of 10 degrees
 
-G1 X10 ; Move the pusher servo to an angle of 10 degrees
+G1 T2 X10 ; For actuator 2, move the pusher servo to an angle of 10 degrees
 
-G10 T1 L0 B11 C12 X40 ; Remember minimum values for the B, C, and X axis angles for tool 1
+G10 T3 L0 B11 C12 X40 ; Remember minimum values for the B, C, and X axis angles
+for tool 3
 
-G10 T2 L1 B101 C101 X145 ; Remember maximum values for the B, C, and X axis angles for tool 2
+G10 T0 L1 B101 C101 X145 ; Remember maximum values for the B, C, and X axis
+angles for tool 0
 
-G28 B C X ; Home all axes, say for loading or unloading filament.
+G28 T1 B C X ; Home all axes, say for loading or unloading filament.
 
 The following commands are parsed, but the functionality is not yet implemented:
 
 
-G1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.  (Parsed by functionality is not yet implemented in the actuator!)
+G1 T1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.  (Parsed by
+functionality is not yet implemented in the actuator!)
 
 
 */
-
 
 #pragma once
 
 #include <Arduino.h>
 #include <earwig.h>
+#include <i2cConfiguration.h>
+#include <pca9685Servo.h>
 #include <string.h>
 
-
+const int PUSHER = 0;
+const int MOVING_CLAMP = 1;
+const int FIXED_CLAMP = 2;
 
 class ChromatoforeFilamentChanger {
  private:
@@ -77,6 +83,12 @@ class ChromatoforeFilamentChanger {
   ChromatoforeFilamentChanger(int size = 64);
   ~ChromatoforeFilamentChanger();
 
+  bool configureForI2C(int i2cActuatorCount, int i2cServoCount,
+                       int servoConfiguration[][4],
+                       I2CConfiguration& i2cConfiguration,
+                       EarwigFilamentActuator iC2Actuators[],
+                       Pca9685PinServo i2cServos[]);
+
   void begin();
   void loop();
 
@@ -96,7 +108,7 @@ class ChromatoforeFilamentChanger {
   int getMaximumAngleC(int tool) const;
   int getMaximumAngleX(int tool) const;
 
-  int getActuatorArraySize() {return actuatorArraySize; } 
+  int getActuatorArraySize() { return actuatorArraySize; }
 
   void initializeEEPROM();
 };

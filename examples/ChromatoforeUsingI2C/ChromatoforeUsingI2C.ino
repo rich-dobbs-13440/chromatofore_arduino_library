@@ -1,21 +1,15 @@
 #include <chromatofore.h>
 #include <earwig.h>
 #include <i2cConfiguration.h>
-#include <pca9685Servo.h>
-
-
-I2CConfiguration i2cConfiguration;
-ChromatoforeFilamentChanger changer(20);
 
 const int I2C_ACTUATOR_COUNT = 4;
+ChromatoforeFilamentChanger changer(I2C_ACTUATOR_COUNT);
 
-const int SERVOS_PER_ACTUATOR = 3;
+EarwigFilamentActuator iC2Actuators[I2C_ACTUATOR_COUNT];
 Pca9685PinServo i2cServos[I2C_ACTUATOR_COUNT*SERVOS_PER_ACTUATOR];
 
+I2CConfiguration i2cConfiguration;
 
-const int PUSHER = 0;
-const int MOVING_CLAMP = 1;
-const int FIXED_CLAMP = 2;
 
 int servoConfiguration[][4] = {
   // I2C, pin, actuator, role
@@ -33,68 +27,51 @@ int servoConfiguration[][4] = {
   {0x41, 11, 3, FIXED_CLAMP},        
 }; 
 
-
-EarwigFilamentActuator iC2Actuators[I2C_ACTUATOR_COUNT];
-
-Pca9685PinServo pusherServo0;
-Pca9685PinServo movingClampServo0;
-Pca9685PinServo fixedClampServo0;
-
-
-EarwigFilamentActuator actuator0;
-
 bool setupFailed = false;
 
 void setup() {
-  int i2cServoCount = sizeof(servoConfiguration) / sizeof(servoConfiguration[0]);
-  assert(i2cServoCount == sizeof(i2cServos)); // Bad servoConfiguration - size mismatch
+
   Serial.begin(9600);  // Initialize serial communication
   delay(2000);
+
+  int i2cServoCount = sizeof(servoConfiguration) / sizeof(servoConfiguration[0]);
+  if (i2cServoCount != I2C_ACTUATOR_COUNT*SERVOS_PER_ACTUATOR) {;
+    debugLog("Bad servoConfiguration - size mismatch: ", i2cServoCount, I2C_ACTUATOR_COUNT*SERVOS_PER_ACTUATOR);
+  };//  
   Serial.println("Start i2cConfiguration.begin()");
+  Serial.flush();
   i2cConfiguration.begin();
   Serial.println("Done with i2cConfiguration.begin()");
-
-  for (int actuatorIndex = 0; actuatorIndex < i2cServoCount; actuatorIndex++) {
-    Pca9685ServoInfo pusher =  getPca9685ServoInfo(
-      servoConfiguration, I2C_ACTUATOR_COUNT, actuatorIndex, PUSHER  
-    );
-    if (pusher.servoIndex < 0) {
-      setupFailed = true;
-      debugLog("Missing configuration for actuator: ", actuatorIndex, " Role = PUSHER");
-      return;
-    }
-    Pca9685PinServo* pusherServo = &i2cServos[pusher.servoIndex];
-    pusherServo->initialize("pusherServo", i2cConfiguration.getPca9685ServoDriverFromAddress(pusher.i2cAddress), pusher.pin);
-
-    Pca9685ServoInfo movingClamp = getPca9685ServoInfo(
-      servoConfiguration, I2C_ACTUATOR_COUNT, actuatorIndex, MOVING_CLAMP  
-    );
-    if (movingClamp.servoIndex < 0) {
-      setupFailed = true;
-      debugLog("Missing configuration for actuator: ", actuatorIndex, " Role = MOVING_CLAMP");
-      return;
-    } 
-    Pca9685PinServo* movingClampServo = &i2cServos[movingClamp.servoIndex];
-    movingClampServo->initialize("movingClampServo", i2cConfiguration.getPca9685ServoDriverFromAddress(movingClamp.i2cAddress), movingClamp.pin);
-
-
-    Pca9685ServoInfo fixedClamp = getPca9685ServoInfo(
-      servoConfiguration, I2C_ACTUATOR_COUNT, actuatorIndex, FIXED_CLAMP  
-    ); 
-    if (fixedClamp.servoIndex < 0) {
-      setupFailed = true;
-      debugLog("Missing configuration for actuator: ", actuatorIndex, " Role = FIXED_CLAMP");
-      return;
-    } 
-    Pca9685PinServo* fixedClampServo = &i2cServos[movingClamp.servoIndex];
-    fixedClampServo->initialize("fixedClampServo", i2cConfiguration.getPca9685ServoDriverFromAddress(fixedClamp.i2cAddress), fixedClamp.pin);
-
-    iC2Actuators[actuatorIndex].initialize(*pusherServo, *movingClampServo, *fixedClampServo);
-    changer.addActuator(actuatorIndex, &iC2Actuators[actuatorIndex]);
-  }  
+  changer.configureForI2C(I2C_ACTUATOR_COUNT, i2cServoCount, servoConfiguration, i2cConfiguration, iC2Actuators, i2cServos);
+  
   changer.setCurrentFilament(1);  // Todo:  Add filament detector to show what filament is loaded.
   changer.begin();
 }
+/*
+The following GCODE parsing is currently implemented:
+
+
+G1 T0 B10 ; For actuator 0, move the fixed clamp servo to an angle of 10 degrees
+
+G1 T1 C10 ; For actuator 1, Move the clamp servo to an angle of 10 degrees
+
+G1 T2 X10 ; For actuator 2, move the pusher servo to an angle of 10 degrees
+
+G10 T3 L0 B11 C12 X40 ; Remember minimum values for the B, C, and X axis angles
+for tool 3
+
+G10 T0 L1 B101 C101 X145 ; Remember maximum values for the B, C, and X axis
+angles for tool 0
+
+G28 T1 B C X ; Home all axes, say for loading or unloading filament.
+
+The following commands are parsed, but the functionality is not yet implemented:
+
+
+G1 T1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.  (Parsed by
+functionality is not yet implemented in the actuator!)
+
+*/
 
 void loop() {
   changer.loop();

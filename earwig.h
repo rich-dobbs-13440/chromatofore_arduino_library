@@ -5,6 +5,8 @@
 // #include <Adafruit_PWMServoDriver.h>
 #include "iServo.h"
 
+const int SERVOS_PER_ACTUATOR = 3;
+
 class EarwigFilamentActuator {
  public:
   EarwigFilamentActuator();

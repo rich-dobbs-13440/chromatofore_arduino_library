@@ -24,16 +24,7 @@ struct Pca9685ServoInfo {
     int servoIndex;
 };
 
-Pca9685ServoInfo getPca9685ServoInfo(int servoConfiguration[][4], int numRows, int actuator, int role) {
-    for (int servoIndex = 0; servoIndex < numRows; servoIndex++) {
-        if (servoConfiguration[servoIndex][2] == actuator && servoConfiguration[servoIndex][3] == role) {
-            return {servoConfiguration[servoIndex][0], servoConfiguration[servoIndex][1], servoIndex};
-        }
-    }
-
-    // No match found
-    return {-1, -1, -1}; 
-}
+Pca9685ServoInfo getPca9685ServoInfo(int servoConfiguration[][4], int numRows, int actuator, int role);
 
 class Pca9685PinServo : public IServo {
  private:
@@ -66,6 +57,7 @@ class Pca9685PinServo : public IServo {
 
   void write(int angle) {
     currentAngle = angle;
+    servoDriver->setServoAngle(pin, angle);
 
   }
 

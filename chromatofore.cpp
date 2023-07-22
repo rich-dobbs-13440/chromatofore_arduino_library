@@ -1,6 +1,7 @@
 #include "chromatofore.h"
 
 #include <EEPROM.h>
+#include <pca9685Servo.h>
 
 #include "debugLog.h"
 
@@ -152,7 +153,14 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
   // debugLog("e:", e);
   // debugLog("f:", f);
   debugLog("g:", g);
+  debugLog("t:", t);
   debugLog("x:", x);
+
+  if (!isnan(t)) {
+    int tool = t;
+    currentFilament = tool;
+  }
+
   EarwigFilamentActuator *pActuator = getActuator(currentFilament);
   if (!isnan(g)) {
     switch (int(g)) {
@@ -209,7 +217,8 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
           } else if (choice == 1) {
             rememberMaximumAngleForTool(tool, b, c, x);
           } else {
-            debugLog("Unrecognized l value for programmable data input command");
+            debugLog(
+                "Unrecognized l value for programmable data input command");
           }
         }
         break;
@@ -351,7 +360,7 @@ void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
   }
 }
 
-int ChromatoforeFilamentChanger::getMinimumAngleB(int tool)  const {
+int ChromatoforeFilamentChanger::getMinimumAngleB(int tool) const {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMinimumAngleB, invalid tool index", tool);
     return -1;
@@ -366,7 +375,7 @@ int ChromatoforeFilamentChanger::getMinimumAngleB(int tool)  const {
   return b;
 }
 
-int ChromatoforeFilamentChanger::getMinimumAngleC(int tool)  const {
+int ChromatoforeFilamentChanger::getMinimumAngleC(int tool) const {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMinimumAngleC, invalid tool index", tool);
     return -1;
@@ -382,7 +391,7 @@ int ChromatoforeFilamentChanger::getMinimumAngleC(int tool)  const {
   return c;
 }
 
-int ChromatoforeFilamentChanger::getMinimumAngleX(int tool)  const {
+int ChromatoforeFilamentChanger::getMinimumAngleX(int tool) const {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMinimumAngleX, invalid tool index", tool);
     return -1;
@@ -398,7 +407,7 @@ int ChromatoforeFilamentChanger::getMinimumAngleX(int tool)  const {
   return x;
 }
 
-int ChromatoforeFilamentChanger::getMaximumAngleB(int tool)  const {
+int ChromatoforeFilamentChanger::getMaximumAngleB(int tool) const {
   if (tool < 0 || tool >= actuatorArraySize) {
     debugLog("In getMaximumAngleB, invalid tool index", tool);
     return -1;
@@ -464,4 +473,59 @@ void ChromatoforeFilamentChanger::initializeEEPROM() {
                                 DEFAULT_MAXIMUM_ANGLE_C,
                                 DEFAULT_MAXIMUM_ANGLE_X);
   }
+}
+
+bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
+                                                  int i2cServoCount,
+                                                  int servoConfiguration[][4],
+                                                  I2CConfiguration& i2cConfiguration, 
+                                                  EarwigFilamentActuator iC2Actuators[],
+                                                  Pca9685PinServo i2cServos[]) {
+  for (int actuatorIndex = 0; actuatorIndex < i2cActuatorCount; actuatorIndex++) {
+    Pca9685ServoInfo pusher = getPca9685ServoInfo(
+        servoConfiguration, i2cServoCount, actuatorIndex, PUSHER);
+    if (pusher.servoIndex < 0) {
+      debugLog("Missing configuration for actuator: ", actuatorIndex,
+               " Role = PUSHER");
+      return false;
+    }
+    Pca9685PinServo *pusherServo = &i2cServos[pusher.servoIndex];
+    pusherServo->initialize(
+        "pusherServo",
+        i2cConfiguration.getPca9685ServoDriverFromAddress(pusher.i2cAddress),
+        pusher.pin);
+
+    Pca9685ServoInfo movingClamp = getPca9685ServoInfo(
+        servoConfiguration, i2cServoCount, actuatorIndex, MOVING_CLAMP);
+    if (movingClamp.servoIndex < 0) {
+      debugLog("Missing configuration for actuator: ", actuatorIndex,
+               " Role = MOVING_CLAMP");
+      return false;
+    }
+    Pca9685PinServo *movingClampServo = &i2cServos[movingClamp.servoIndex];
+    movingClampServo->initialize(
+        "movingClampServo",
+        i2cConfiguration.getPca9685ServoDriverFromAddress(
+            movingClamp.i2cAddress),
+        movingClamp.pin);
+
+    Pca9685ServoInfo fixedClamp = getPca9685ServoInfo(
+        servoConfiguration, i2cServoCount, actuatorIndex, FIXED_CLAMP);
+    if (fixedClamp.servoIndex < 0) {
+      debugLog("Missing configuration for actuator: ", actuatorIndex,
+               " Role = FIXED_CLAMP");
+      return false;
+    }
+    Pca9685PinServo *fixedClampServo = &i2cServos[movingClamp.servoIndex];
+    fixedClampServo->initialize(
+        "fixedClampServo",
+        i2cConfiguration.getPca9685ServoDriverFromAddress(
+            fixedClamp.i2cAddress),
+        fixedClamp.pin);
+
+    iC2Actuators[actuatorIndex].initialize(*pusherServo, *movingClampServo,
+                                           *fixedClampServo);
+    addActuator(actuatorIndex, &iC2Actuators[actuatorIndex]);
+  }
+  return true;
 }
