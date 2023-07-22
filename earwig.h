@@ -1,8 +1,6 @@
 #pragma once
 
 #include <Arduino.h>
-// #include <Wire.h>
-// #include <Adafruit_PWMServoDriver.h>
 #include "iServo.h"
 
 const int SERVOS_PER_ACTUATOR = 3;
@@ -10,9 +8,15 @@ const int SERVOS_PER_ACTUATOR = 3;
 class EarwigFilamentActuator {
  public:
   EarwigFilamentActuator();
+  // Disable copy constructor
+  EarwigFilamentActuator(const EarwigFilamentActuator&) = delete; 
+  // Disable copy assignment operator
+  EarwigFilamentActuator& operator=(const EarwigFilamentActuator&) = delete; 
+   
+
+  void dump();
   
-  void initialize(IServo& pusherServo, IServo& movingClampServo,
-                         IServo& fixedClampServo) {
+  void initialize(IServo& pusherServo, IServo& movingClampServo, IServo& fixedClampServo) {
                           this->pusherServo = &pusherServo;
                           this->movingClampServo = &movingClampServo;
                           this->fixedClampServo = &fixedClampServo;

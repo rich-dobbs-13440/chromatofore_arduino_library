@@ -3,6 +3,7 @@
 
 #include <Adafruit_PWMServoDriver.h>
 #include "iBoard.h"
+#include "debugLog.h"
 
 class PCA9685ServoDriver : public iBoard {
  public:
@@ -23,8 +24,7 @@ class PCA9685ServoDriver : public iBoard {
     if (pinNumber >= 0 && pinNumber < 16) {
       if (angle >= 0 && angle <= 180) {
         int pulse = map(angle, 0, 180, SERVOMIN, SERVOMAX);
-        Serial.print("Pulse: ");
-        Serial.println(pulse);
+        debugLog("Setting pinNumber:", pinNumber, "pulse: ", pulse);
         pwmServoDriver.setPWM(pinNumber, 0, pulse);
         return true;
       } else {
@@ -38,6 +38,11 @@ class PCA9685ServoDriver : public iBoard {
   }
   byte getI2cAddress() const {
     return i2cAddress;
+  }
+  void atEase(int pinNumber) {
+    if (pinNumber >= 0 && pinNumber < 16) {
+      pwmServoDriver.setPWM(pinNumber, 0, 0);  // Stop seeking!
+    }
   }
  private:
   byte i2cAddress;

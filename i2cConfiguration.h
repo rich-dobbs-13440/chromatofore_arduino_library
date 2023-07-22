@@ -6,6 +6,7 @@
 #include "iBoard.h"
 #include "pca9685ServoDriver.h"
 #include "pcf8574GPIOMultiplexer.h"
+#include "debugLog.h"
 
 class I2CConfiguration {
  public:

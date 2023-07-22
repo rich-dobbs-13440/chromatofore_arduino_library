@@ -11,20 +11,20 @@
 
 #pragma once
 
-#include "pca9685ServoDriver.h"
-
 #include <Arduino.h>
+
 #include "debugLog.h"
 #include "iServo.h"
-
+#include "pca9685ServoDriver.h"
 
 struct Pca9685ServoInfo {
-    int i2cAddress;
-    int pin;
-    int servoIndex;
+  int servoIndex;
+  int i2cAddress;
+  int pin;
 };
 
-Pca9685ServoInfo getPca9685ServoInfo(int servoConfiguration[][4], int numRows, int actuator, int role);
+Pca9685ServoInfo getPca9685ServoInfo(int servoConfiguration[][4], int numRows,
+                                     int actuator, int role);
 
 class Pca9685PinServo : public IServo {
  private:
@@ -36,8 +36,8 @@ class Pca9685PinServo : public IServo {
   int currentAngle = -1;
 
  public:
-  Pca9685PinServo(){}
-  
+  Pca9685PinServo() {}
+
   void initialize(String id, PCA9685ServoDriver* servoDriver, int pin) {
     this->id = id;
     this->servoDriver = servoDriver;
@@ -46,19 +46,20 @@ class Pca9685PinServo : public IServo {
 
   void begin(int minimumAngle, int maximumAngle,
              float initialRelativePosition) {
-    debugLog("Pca9685PinServo::begin() called.  Pin", pin, "minimumAngle",
+    debugLog("Pca9685PinServo::begin() called.  id: ", id, "Pin", pin, "minimumAngle",
              minimumAngle, "maximumAngle", maximumAngle,
              "initialRelativePosition", initialRelativePosition);
     this->minimumAngle = minimumAngle;
     this->maximumAngle = maximumAngle;
     position(initialRelativePosition);
     debugLog("CurrentAngle", currentAngle);
+    delay(100);
+    servoDriver->atEase(pin);
   }
 
   void write(int angle) {
     currentAngle = angle;
     servoDriver->setServoAngle(pin, angle);
-
   }
 
   void position(float relativePosition) {
@@ -71,4 +72,6 @@ class Pca9685PinServo : public IServo {
     debugLog("id:", id, "pin:", pin, "minimumAngle:", minimumAngle,
              "maximumAngle:", maximumAngle, "currentAngle:", currentAngle);
   }
+
+  void atEase() { servoDriver->atEase(pin); }
 };

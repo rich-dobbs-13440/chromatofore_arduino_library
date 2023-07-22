@@ -27,7 +27,7 @@ class ArduinoPinServo : public IServo {
 
   void begin(int minimumAngle, int maximumAngle,
              float initialRelativePosition) {
-    debugLog("StandardServo::begin() called.  Pin", pin, "minimumAngle",
+    debugLog("StandardServo::begin() called.  id", id, "Pin", pin, "minimumAngle",
              minimumAngle, "maximumAngle", maximumAngle,
              "initialRelativePosition", initialRelativePosition);
     this->minimumAngle = minimumAngle;

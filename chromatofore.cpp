@@ -484,6 +484,7 @@ bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
   for (int actuatorIndex = 0; actuatorIndex < i2cActuatorCount; actuatorIndex++) {
     Pca9685ServoInfo pusher = getPca9685ServoInfo(
         servoConfiguration, i2cServoCount, actuatorIndex, PUSHER);
+    debugLog("pusher servoIndex:", pusher.servoIndex, " ic2 address:", pusher.i2cAddress, "pin:", pusher.pin);
     if (pusher.servoIndex < 0) {
       debugLog("Missing configuration for actuator: ", actuatorIndex,
                " Role = PUSHER");
@@ -497,6 +498,7 @@ bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
 
     Pca9685ServoInfo movingClamp = getPca9685ServoInfo(
         servoConfiguration, i2cServoCount, actuatorIndex, MOVING_CLAMP);
+    debugLog("movingClamp servoIndex:", movingClamp.servoIndex, " ic2 address:", movingClamp.i2cAddress, "pin:", movingClamp.pin);        
     if (movingClamp.servoIndex < 0) {
       debugLog("Missing configuration for actuator: ", actuatorIndex,
                " Role = MOVING_CLAMP");
@@ -511,20 +513,20 @@ bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
 
     Pca9685ServoInfo fixedClamp = getPca9685ServoInfo(
         servoConfiguration, i2cServoCount, actuatorIndex, FIXED_CLAMP);
+    debugLog("fixedClamp servoIndex:", fixedClamp.servoIndex, " ic2 address:", fixedClamp.i2cAddress, "pin:", fixedClamp.pin); 
     if (fixedClamp.servoIndex < 0) {
       debugLog("Missing configuration for actuator: ", actuatorIndex,
                " Role = FIXED_CLAMP");
       return false;
     }
-    Pca9685PinServo *fixedClampServo = &i2cServos[movingClamp.servoIndex];
+    Pca9685PinServo *fixedClampServo = &i2cServos[fixedClamp.servoIndex];
     fixedClampServo->initialize(
         "fixedClampServo",
         i2cConfiguration.getPca9685ServoDriverFromAddress(
             fixedClamp.i2cAddress),
         fixedClamp.pin);
 
-    iC2Actuators[actuatorIndex].initialize(*pusherServo, *movingClampServo,
-                                           *fixedClampServo);
+    iC2Actuators[actuatorIndex].initialize(*pusherServo, *movingClampServo, *fixedClampServo);
     addActuator(actuatorIndex, &iC2Actuators[actuatorIndex]);
   }
   return true;

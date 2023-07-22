@@ -13,11 +13,11 @@ const float CLOSED_POSITION = 1;
 // const int LOCK_FOR_EXTRUDE_STATE  = 3;
 // const int MOVE_FILAMENT_STATE = 4;
 
-const String IDLE_STATE = "IDLE";
-const String LOCK_TO_START_STATE  = "LOCK_TO_START";
-const String MOVE_TO_START_STATE  = "MOVE_TO_START";
-const String LOCK_FOR_EXTRUDE_STATE  = "LOCK_FOR_EXTRUDE";
-const String MOVE_FILAMENT_STATE = "MOVE_FILAMENT";
+String IDLE_STATE = "IDLE";
+String LOCK_TO_START_STATE  = "LOCK_TO_START";
+String MOVE_TO_START_STATE  = "MOVE_TO_START";
+String LOCK_FOR_EXTRUDE_STATE  = "LOCK_FOR_EXTRUDE";
+String MOVE_FILAMENT_STATE = "MOVE_FILAMENT";
 
 float mmPerStep = 24.0;
 
@@ -29,6 +29,19 @@ EarwigFilamentActuator::EarwigFilamentActuator() {
   state = IDLE_STATE;
   nextActionMillis = -1;
 }
+
+
+void EarwigFilamentActuator::dump() {
+  Serial.print("Address:");
+  Serial.println((uintptr_t)this, HEX);  
+  debugLog("clampingDelayMillis:", clampingDelayMillis);
+  debugLog("movementDelayMillis:", movementDelayMillis);
+  debugLog("mmToExtrude", mmToExtrude);
+  debugLog("state:", state);
+  debugLog("nextActionMillis:", nextActionMillis);
+}
+
+
 
 void EarwigFilamentActuator::begin(int minimumFixedClampServoAngle,
                                    int maximumFixedClampServoAngle,
@@ -43,14 +56,26 @@ void EarwigFilamentActuator::begin(int minimumFixedClampServoAngle,
   movingClampServo->begin(minimumMovingClampServoAngle,
                          maximumMovingClampServoAngle, 0);
   pusherServo->begin(minimumPusherServoAngle, maximumPusherServoAngle, 0);
+
+  state = IDLE_STATE;
+
+  dump();
+
 }
 
 void EarwigFilamentActuator::loop() {
+  // static int count = 0;   
+  // if (count < 5) {  // Only run the following code for the first 5 calls to loop
+  //   debugLog("Address:");
+  //   Serial.println((uintptr_t)this, HEX);  // Print the address of this object
+  //   debugLog("State: '", state);
+  //   count++;  // Increase the counter
+  // }  
   if (state == IDLE_STATE) {
     return;
   }
   if (millis() > nextActionMillis) {
-    debugLog("Starting state: ", state, "mmToExtrude:", mmToExtrude);
+    debugLog("Starting state: '", state, "'   mmToExtrude:", mmToExtrude);
     if (state == LOCK_TO_START_STATE) {
       fixedClampServo->position(CLOSED_POSITION);
       movingClampServo->position(OPEN_POSITION);
@@ -75,11 +100,14 @@ void EarwigFilamentActuator::loop() {
       if (abs(mmToExtrude) > 1) {
         state = LOCK_TO_START_STATE;
       } else {
-        mmToExtrude == 0;
+        mmToExtrude = 0;
+        fixedClampServo->atEase();
+        movingClampServo->atEase();
+        pusherServo->atEase();      
         state = IDLE_STATE;
       }
     }
-    debugLog("Ending state: ", state, "nextActionMillis:", nextActionMillis, "mmToExtrude:", mmToExtrude);
+    debugLog("Ending state: '", state, "' nextActionMillis:", nextActionMillis, "mmToExtrude:", mmToExtrude);
   }
 }
 
@@ -102,11 +130,13 @@ void EarwigFilamentActuator::extrude(float mmOfFilament,
                                      float mmPerMinuteFeedrate) {
                                       
   mmToExtrude += mmOfFilament;
-  debugLog("Ending state: ", state, "mmToExtrude:", mmToExtrude);
+  debugLog("Current state: '", state, "' mmToExtrude:", mmToExtrude);
   // Ignore feedrate for now.
 
   if (state == IDLE_STATE) {
+    
     state = LOCK_TO_START_STATE;
+    debugLog("Entering state: '", state, "' mmToExtrude:", mmToExtrude);
     nextActionMillis = millis();
   }
 }
@@ -126,7 +156,7 @@ void EarwigFilamentActuator::home(float fixedClamp, float movingClamp, float pus
       movingClampServo->position(OPEN_POSITION);
     }
     if (!isnan(pusher)) {
-      pusherServo->position(FRONT_POSITION);
+      pusherServo->position(0.5);
     }
   }
 

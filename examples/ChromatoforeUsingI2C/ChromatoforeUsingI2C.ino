@@ -48,14 +48,84 @@ void setup() {
   changer.begin();
 }
 /*
-The following GCODE parsing is currently implemented:
+
+Configuration debugging commands - Use one at a time in the serial monitor.
+
+; Actuator 0
+
+  ; Test pusher servo
+    G1 T0 X50; Toward fixed clamp
+    G1 T0 X80; Mid
+    G1 T0 X100; Toward outlet clamp
+
+  ; Test fixed clamp
+    G1 T0 B10; Open
+    G1 T0 B50; Mid
+    G1 T0 B100; Locked
+
+  ; Test Moving clamp
+    G1 T0 C10; Open
+    G1 T0 B50; Mid  
+    G1 T0 C100; Locked
+
+  ; Retract filament 
+    G1 T0 E-100 
+  ; Advance filament
+    G1 T0 E100 
+
+; Actuator 1
+
+  ; Test pusher servo
+    G1 T1 X50; Toward fixed clamp
+    G1 T1 X80; Mid
+    G1 T1 X100; Toward outlet clamp
+
+  ; Test fixed clamp
+    G1 T1 B10; Open
+    G1 T1 B50; Mid
+    G1 T1 B80; Locked
+
+  ; Test Moving clamp
+    G1 T1 C10; Open
+    G1 T1 B50; Mid  
+    G1 T1 C100; Locked
 
 
-G1 T0 B10 ; For actuator 0, move the fixed clamp servo to an angle of 10 degrees
+; Actuator 2
 
-G1 T1 C10 ; For actuator 1, Move the clamp servo to an angle of 10 degrees
+  ; Test pusher servo
+    G1 T2 X50; Toward fixed clamp
+    G1 T2 X80; Mid
+    G1 T2 X100; Toward outlet clamp
 
-G1 T2 X10 ; For actuator 2, move the pusher servo to an angle of 10 degrees
+  ; Test fixed clamp
+    G1 T2 B10; Open
+    G1 T2 B50; Mid
+    G1 T2 B80; Locked
+
+  ; Test Moving clamp
+    G1 T2 C10; Open
+    G1 T2 B50; Mid  
+    G1 T2 C100; Locked
+
+; Actuator 3
+
+  ; Test pusher servo
+    G1 T3 X50; Toward fixed clamp
+    G1 T3 X80; Mid
+    G1 T3 X100; Toward outlet clamp
+
+  ; Test fixed clamp
+    G1 T3 B10; Open
+    G1 T3 B50; Mid
+    G1 T3 B80; Locked
+
+  ; Test Moving clamp
+    G1 T3 C10; Open
+    G1 T3 B50; Mid  
+    G1 T3 C100; Locked    
+
+
 
 G10 T3 L0 B11 C12 X40 ; Remember minimum values for the B, C, and X axis angles
 for tool 3
@@ -65,11 +135,10 @@ angles for tool 0
 
 G28 T1 B C X ; Home all axes, say for loading or unloading filament.
 
-The following commands are parsed, but the functionality is not yet implemented:
+
+G1 T1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore. 
 
 
-G1 T1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.  (Parsed by
-functionality is not yet implemented in the actuator!)
 
 */
 
