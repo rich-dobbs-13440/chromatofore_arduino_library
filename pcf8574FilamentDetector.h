@@ -22,11 +22,18 @@ class Pcf8574FilamentDetector : public IFilamentDetector {
   };
 
   FilamentDetectorState read() override {
-    bool pinState = multiplexer->readPin(pin);
-    if (pinState == true) {
+    
+    multiplexer->readAndPrintPins();
+
+    auto pinState = multiplexer->readPin(pin);
+
+    multiplexer->readAndPrintPins();
+    if (pinState == PinState::HIGH) {
       return FilamentDetectorState::Detected;
-    } else {
+    } else if (pinState == PinState::LOW) {
       return FilamentDetectorState::Undetected;
+    } else {
+      return FilamentDetectorState::Error;
     }
   };
 };

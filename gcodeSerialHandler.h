@@ -21,4 +21,5 @@ class GcodeSerialHandler : public ISerialHandler {
   char inputBuffer[BUFFER_SIZE];       // Input buffer to store characters
 
   ChromatoforeFilamentChanger* changer = nullptr;
+  bool debug = false;
 };

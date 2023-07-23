@@ -24,7 +24,7 @@ class PCA9685ServoDriver : public iBoard {
     if (pinNumber >= 0 && pinNumber < 16) {
       if (angle >= 0 && angle <= 180) {
         int pulse = map(angle, 0, 180, SERVOMIN, SERVOMAX);
-        debugLog("Setting pinNumber:", pinNumber, "pulse: ", pulse);
+        // debugLog("Setting pinNumber:", pinNumber, "pulse: ", pulse);
         pwmServoDriver.setPWM(pinNumber, 0, pulse);
         return true;
       } else {

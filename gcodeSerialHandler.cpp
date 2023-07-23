@@ -5,7 +5,9 @@ float float_nan = std::numeric_limits<float>::quiet_NaN();
 
 void GcodeSerialHandler::handleSerial() {
   if (Serial.available() > 0) {
-    debugLog("Serial.available() is true");
+    if (debug) {
+        debugLog("Serial.available() is true");
+    }
     while (Serial.available() > 0) {
       char serialChar = Serial.read();
       if (echoCharacters)
@@ -37,7 +39,10 @@ void GcodeSerialHandler::processInputBuffer() {
   if (commentMarker != nullptr) {
     *commentMarker = '\0';  // Truncate the buffer at the comment marker
   }
-  debugLog("After removal of comment ", inputBuffer);
+  if (debug) {
+    debugLog("After removal of comment ", inputBuffer);
+  }
+  
 
   char *token;
   char delimiter = ' ';
@@ -81,13 +86,16 @@ void GcodeSerialHandler::processInputBuffer() {
     }
     token = strtok(NULL, &delimiter);
   }
-  debugLog("b:", b);
-  debugLog("c:", c);
-  // debugLog("e:", e);
-  // debugLog("f:", f);
-  debugLog("g:", g);
-  debugLog("t:", t);
-  debugLog("x:", x);
+
+  if (debug) {
+    debugLog("b:", b);
+    debugLog("c:", c);
+    debugLog("e:", e);
+    debugLog("f:", f);
+    debugLog("g:", g);
+    debugLog("t:", t);
+    debugLog("x:", x);
+  }
 
   if (!isnan(t)) {
     int tool = t;
@@ -177,7 +185,7 @@ void GcodeSerialHandler::processInputBuffer() {
         if (pActuator) {
           pActuator->printSwitchStates();
         } else {
-          debugLog("Can't handle home command. b:", b, "c:", c, "x:", x,
+          debugLog("Can't handle print switch states command M119. t: ", t, 
                    "No current actuator found with index:", currentFilament);
         }
         break;

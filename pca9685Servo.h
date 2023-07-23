@@ -46,13 +46,16 @@ class Pca9685PinServo : public IServo {
 
   void begin(int minimumAngle, int maximumAngle,
              float initialRelativePosition) {
+    /*
     debugLog("Pca9685PinServo::begin() called.  id: ", id, "Pin", pin, "minimumAngle",
              minimumAngle, "maximumAngle", maximumAngle,
-             "initialRelativePosition", initialRelativePosition);
+             "initialRelativePosition", initialRelativePosition);    
+    */
+
     this->minimumAngle = minimumAngle;
     this->maximumAngle = maximumAngle;
     position(initialRelativePosition);
-    debugLog("CurrentAngle", currentAngle);
+    // debugLog("CurrentAngle", currentAngle);
     delay(100);
     servoDriver->atEase(pin);
   }

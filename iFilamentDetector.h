@@ -4,7 +4,8 @@
 
 enum class FilamentDetectorState {
     Detected,
-    Undetected
+    Undetected, 
+    Error
 };
 
 class IFilamentDetector {

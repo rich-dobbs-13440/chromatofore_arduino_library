@@ -63,7 +63,7 @@ void EarwigFilamentActuator::begin(int minimumFixedClampServoAngle,
 
   state = IDLE_STATE;
 
-  dump();
+  // dump();
 }
 
 void EarwigFilamentActuator::loop() {
@@ -170,11 +170,13 @@ void EarwigFilamentActuator::printSwitchStates() {
     auto state = filamentDetector->read();
     if (state == FilamentDetectorState::Detected) {
       debugLog("Filament detected!");
+    } else if (state == FilamentDetectorState::Undetected) {
+      debugLog("Filament not detected!");
     } else {
-      debugLog("Filament detected!");
+      debugLog("Error in printSwitchStates", int(state));
     }
   } else {
-    debugLog("No filament dector in Earwig.");
+    debugLog("No filament detector in Earwig.");
   }
 }
 

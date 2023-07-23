@@ -2,6 +2,13 @@
 
 #include <PCF8574.h>
 #include "iBoard.h"
+#include "debugLog.h"
+
+enum class PinState {
+    HIGH,
+    LOW,
+    ERROR
+};
 
 
 class PCF8574GPIOMultiplexer : public iBoard {
@@ -9,12 +16,6 @@ public:
   PCF8574GPIOMultiplexer(byte i2cAddress)
     : i2cAddress(i2cAddress), pcf8574(i2cAddress) {}
   void initialize() override {
-    // // Initialize Wire library and set the pin configuration of the PCF8574
-    // Wire.begin();
-    // Wire.beginTransmission(i2cAddress);
-    // Wire.write(0xFF);  // Set all pins as inputs (high impedance)
-    // Wire.endTransmission();
-
 
     pcf8574.pinMode(P0, INPUT);
     pcf8574.pinMode(P1, INPUT);
@@ -25,33 +26,35 @@ public:
     pcf8574.pinMode(P6, INPUT);
     pcf8574.pinMode(P7, INPUT);
 
-    Serial.print("Init pcf8574...");
     if (pcf8574.begin()) {
-      Serial.println("OK");
+      debugLog("Init pcf8574  OK");
     } else {
-      Serial.println("KO");
+      debugLog("Init pcf8574 failed");
     }
   }
   void printConfig() override {
     Serial.print("PCF8574GPIOMultiplexer, I2C address: 0x");
     Serial.println(i2cAddress, HEX);
   }
-  bool readPin(byte pinNumber) {
+  PinState readPin(uint8_t pinNumber) {
+    Serial.print("I2C: 0x");
+    Serial.print(i2cAddress, HEX);
+    Serial.println("  ");
     if (pinNumber >= 0 && pinNumber < 8) {
-      // Read the state of all pins from the PCF8574
-      Wire.requestFrom(i2cAddress, static_cast<int>(1));
-      if (Wire.available()) {
-        byte pinStates = Wire.read();
-
-        // Extract the state of the specified pin (0 = LOW, 1 = HIGH)
-        return bitRead(pinStates, pinNumber);
+      pcf8574.readBuffer();
+      uint8_t val = pcf8574.digitalRead(pinNumber, true);
+      debugLog("pinNumber", pinNumber, "val: ", val);
+      if (val == HIGH) {
+        debugLog("returning PinState::HIGH");
+        return PinState::HIGH;
       } else {
-        Serial.println("Wire.available() is false!");
-      }
+        debugLog("returning PinState::LOW");
+        return PinState::LOW;
+      };
     }
 
-    // If the pin number is invalid, return false
-    return false;
+    debugLog("Bad pin number: ", pinNumber);
+    return PinState::ERROR;
   }
 
   void readAndPrintPins() {
@@ -109,6 +112,7 @@ public:
       Serial.print("P7 LOW   ");
     }
     Serial.println();
+
   }
 
   void pcf8574Loop(int seconds) {

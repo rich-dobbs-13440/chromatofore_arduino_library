@@ -61,7 +61,7 @@ const int FILAMENT_DETECTOR = 3;
 
 class ChromatoforeFilamentChanger {
  private:
-  String version = "0.1t";
+  String version = "0.2a";
   EarwigFilamentActuator** actuatorArray;
   int actuatorArraySize;
   int baudRate = 9600;

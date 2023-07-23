@@ -30,6 +30,11 @@ ChromatoforeFilamentChanger::~ChromatoforeFilamentChanger() {
   }
   if (i2cConfiguration != nullptr) {
     delete i2cConfiguration;
+    i2cConfiguration = nullptr;
+  }
+  if (serialHandler != nullptr) {
+    delete serialHandler;
+    serialHandler = nullptr;
   }
 }
 
@@ -54,7 +59,7 @@ EarwigFilamentActuator *ChromatoforeFilamentChanger::getActuator(int index) {
 }
 
 void ChromatoforeFilamentChanger::begin() {
-  Serial.begin(baudRate);
+
 
   debugLog("--------------");
   debugLog("Chromatofore Version:", version);
