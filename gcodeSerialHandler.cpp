@@ -55,6 +55,7 @@ void GcodeSerialHandler::processInputBuffer() {
   float g = float_nan;
   float l = float_nan;
   float m = float_nan;
+  float q = float_nan;
   float t = float_nan;
   float x = float_nan;
 
@@ -64,8 +65,7 @@ void GcodeSerialHandler::processInputBuffer() {
     // debugLog("word", word);
     if (word.startsWith("B")) {
       b = word.substring(1).toFloat();
-    }
-    if (word.startsWith("C")) {
+    } else if (word.startsWith("C")) {
       c = word.substring(1).toFloat();
     } else if (word.startsWith("E")) {
       e = word.substring(1).toFloat();
@@ -79,6 +79,8 @@ void GcodeSerialHandler::processInputBuffer() {
       l = word.substring(1).toFloat();
     } else if (word.startsWith("M")) {
       m = word.substring(1).toFloat();
+    } else if (word.startsWith("Q")) {
+      q = word.substring(1).toFloat();      
     } else if (word.startsWith("T")) {
       t = word.substring(1).toInt();
     } else if (word.startsWith("X")) {
@@ -93,6 +95,7 @@ void GcodeSerialHandler::processInputBuffer() {
     debugLog("e:", e);
     debugLog("f:", f);
     debugLog("g:", g);
+    debugLog("q:", q);
     debugLog("t:", t);
     debugLog("x:", x);
   }
@@ -126,10 +129,12 @@ void GcodeSerialHandler::processInputBuffer() {
           }
         } else if (!isnan(e)) {
           if (pActuator) {
-            debugLog("Handle extrusion command. e:", e, "f:", f);
+            debugLog("Handle extrusion command. e:", e, "f:", f, "q:", q);
             float mm_of_filament = e;
             float feedrate_mm_per_minute = f;
-            pActuator->extrude(mm_of_filament, feedrate_mm_per_minute);
+            bool use_filament_detector = !isnan(q);
+            bool require_filament = q > 0;
+            pActuator->extrude(mm_of_filament, feedrate_mm_per_minute, use_filament_detector, require_filament);
           } else {
             debugLog("Can't handle extrusion command. e:", e, "f:", f,
                      "No current actuator found with index:", currentFilament);

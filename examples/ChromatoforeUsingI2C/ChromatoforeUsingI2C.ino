@@ -155,7 +155,7 @@ G28 T1 B C X ; Home all axes, say for loading or unloading filament.
 
 G1 T1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore. 
 
-
+G1 T E-10 Q1; Extrude 10 mm of filament, feed rate currently ignore.
 
 */
 

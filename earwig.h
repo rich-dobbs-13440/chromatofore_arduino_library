@@ -34,7 +34,7 @@ class EarwigFilamentActuator {
   void setPusherServoAngle(int angle) { pusherServo->write(angle); }
   void setMovingClampServoAngle(int angle) { movingClampServo->write(angle); }
   void setFixedClampServoAngle(int angle) { fixedClampServo->write(angle); }
-  void extrude(float mmOfFilament, float mmPerMinuteFeedrate);
+  void extrude(float mmOfFilament, float mmPerMinuteFeedrate, bool use_filament_detector, bool require_filament);
   float calculateExtrusionAmount(float startPosition, float endPosition);
   float calculateEndPosition(float startPosition);
   void home(float fixedClamp, float movingClamp, float pusher);
@@ -51,4 +51,6 @@ class EarwigFilamentActuator {
   // int state;
   String state;  // For development
   unsigned long nextActionMillis;
+  bool use_filament_detector = false;
+  bool require_filament = false;
 };

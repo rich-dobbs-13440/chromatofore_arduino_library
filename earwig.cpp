@@ -22,8 +22,8 @@ String MOVE_FILAMENT_STATE = "MOVE_FILAMENT";
 float mmPerStep = 24.0;
 
 EarwigFilamentActuator::EarwigFilamentActuator() {
-  clampingDelayMillis = 3000;
-  movementDelayMillis = 3000;
+  clampingDelayMillis = 1000;
+  movementDelayMillis = 1000;
   mmToExtrude = 0.0;
 
   state = IDLE_STATE;
@@ -66,6 +66,10 @@ void EarwigFilamentActuator::begin(int minimumFixedClampServoAngle,
   // dump();
 }
 
+void end_extrusion() {
+
+}
+
 void EarwigFilamentActuator::loop() {
   // static int count = 0;
   // if (count < 5) {  // Only run the following code for the first 5 calls to
@@ -85,6 +89,7 @@ void EarwigFilamentActuator::loop() {
       nextActionMillis = millis() + clampingDelayMillis;
       state = MOVE_TO_START_STATE;
     } else if (state == MOVE_TO_START_STATE) {
+
       float startPosition = mmToExtrude > 0 ? FRONT_POSITION : BACK_POSITION;
       pusherServo->position(startPosition);
       nextActionMillis = millis() + movementDelayMillis;
@@ -95,15 +100,34 @@ void EarwigFilamentActuator::loop() {
       nextActionMillis = millis() + clampingDelayMillis;
       state = MOVE_FILAMENT_STATE;
     } else if (state == MOVE_FILAMENT_STATE) {
-      float startPosition = mmToExtrude > 0 ? FRONT_POSITION : BACK_POSITION;
-      float endPosition = calculateEndPosition(startPosition);
-      pusherServo->position(endPosition);
-      mmToExtrude -= calculateExtrusionAmount(startPosition, endPosition);
-      nextActionMillis = millis() + movementDelayMillis;
-      if (abs(mmToExtrude) > 1) {
+      bool stop_moving = false;
+      if (use_filament_detector) {
+        auto filamentState = filamentDetector->read();
+        if (filamentState == FilamentDetectorState::Undetected) {
+          stop_moving = require_filament;
+          debugLog("FilamentDetectorState::Undetected.  stop_moving:", stop_moving);
+        } else if (filamentState == FilamentDetectorState::Detected) {
+          stop_moving = !require_filament;
+          debugLog("FilamentDetectorState::Detected.  stop_moving:", stop_moving);
+        } else {
+          stop_moving = true;
+          debugLog("FilamentDetectorState::Error.  stop_moving:", stop_moving);
+        }
+      }
+      if (!stop_moving) {
+        float startPosition = mmToExtrude > 0 ? FRONT_POSITION : BACK_POSITION;
+        float endPosition = calculateEndPosition(startPosition);
+        pusherServo->position(endPosition);
+        mmToExtrude -= calculateExtrusionAmount(startPosition, endPosition);
+        nextActionMillis = millis() + movementDelayMillis;
+      }
+      if (!stop_moving && abs(mmToExtrude) > 1) {
         state = LOCK_TO_START_STATE;
       } else {
         mmToExtrude = 0;
+        fixedClampServo->position(OPEN_POSITION);
+        movingClampServo->position(CLOSED_POSITION);
+        delay(clampingDelayMillis);
         fixedClampServo->atEase();
         movingClampServo->atEase();
         pusherServo->atEase();
@@ -131,7 +155,11 @@ float EarwigFilamentActuator::calculateEndPosition(float startPosition) {
 }
 
 void EarwigFilamentActuator::extrude(float mmOfFilament,
-                                     float mmPerMinuteFeedrate) {
+                                     float mmPerMinuteFeedrate, 
+                                    bool use_filament_detector, 
+                                    bool require_filament) {
+  this->use_filament_detector = use_filament_detector;
+  this->require_filament = require_filament;
   mmToExtrude += mmOfFilament;
   debugLog("Current state: '", state, "' mmToExtrude:", mmToExtrude);
   // Ignore feedrate for now.
