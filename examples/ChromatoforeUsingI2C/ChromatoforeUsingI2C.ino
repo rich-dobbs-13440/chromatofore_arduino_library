@@ -2,33 +2,44 @@
 #include <earwig.h>
 #include <i2cConfiguration.h>
 
-const int I2C_ACTUATOR_COUNT = 4;
+const int I2C_ACTUATOR_COUNT = 4; // Update to match your physical configuration.
 ChromatoforeFilamentChanger changer(I2C_ACTUATOR_COUNT);
 
+// Update based on jumper settings for your specific I2C boards:
+int servoBoard0Address = 0x41;
+int gpioBoard0Address = 0x22;
 
+
+// The pins on the PCA9685 breakout board are number from left to right, 
+// when the board is positions so the text is upright.
+
+int sb0 = servoBoard0Address;
 int servoConfiguration[][4] = {
   // I2C, pin, actuator, role
-  {0x41, 0, 0, PUSHER},
-  {0x41, 1, 0, MOVING_CLAMP},
-  {0x41, 2, 0, FIXED_CLAMP},
-  {0x41, 3, 1, PUSHER},
-  {0x41, 4, 1, MOVING_CLAMP},
-  {0x41, 5, 1, FIXED_CLAMP},  
-  {0x41, 6, 2, PUSHER},
-  {0x41, 7, 2, MOVING_CLAMP},
-  {0x41, 8, 2, FIXED_CLAMP},  
-  {0x41, 9, 3, PUSHER},
-  {0x41, 10, 3, MOVING_CLAMP},
-  {0x41, 11, 3, FIXED_CLAMP},        
+  {sb0, 0, 0, PUSHER},
+  {sb0, 1, 0, MOVING_CLAMP},
+  {sb0, 2, 0, FIXED_CLAMP},
+  {sb0, 3, 1, PUSHER},
+  {sb0, 4, 1, MOVING_CLAMP},
+  {sb0, 5, 1, FIXED_CLAMP},  
+  {sb0, 6, 2, PUSHER},
+  {sb0, 7, 2, MOVING_CLAMP},
+  {sb0, 8, 2, FIXED_CLAMP},  
+  {sb0, 9, 3, PUSHER},
+  {sb0, 10, 3, MOVING_CLAMP},
+  {sb0, 11, 3, FIXED_CLAMP}, 
+  // Add configuration of daughter board here!       
 }; 
 
 // The pins on the PCF8574 are numbered in the opposite direction from the servo board:
+int gb0 = gpioBoard0Address;
 int gpioConfiguration[][4] = {
    // I2C, pin, actuator, role
-  {0x22, 7, 0, FILAMENT_DETECTOR},
-  {0x22, 6, 1, FILAMENT_DETECTOR},
-  {0x22, 5, 2, FILAMENT_DETECTOR},
-  {0x22, 4, 3, FILAMENT_DETECTOR},
+  {gb0, 7, 0, FILAMENT_DETECTOR},
+  {gb0, 6, 1, FILAMENT_DETECTOR},
+  {gb0, 5, 2, FILAMENT_DETECTOR},
+  {gb0, 4, 3, FILAMENT_DETECTOR},
+  // Add configuration of second daughter GPIO boards here!  
 };
 
 bool setupFailed = false;
