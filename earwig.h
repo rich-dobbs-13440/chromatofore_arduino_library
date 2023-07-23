@@ -2,6 +2,9 @@
 
 #include <Arduino.h>
 #include "iServo.h"
+#include "iFilamentDetector.h"
+#include "pcf8574Switch.h"
+#include "pcf8574FilamentDetector.h"
 
 const int SERVOS_PER_ACTUATOR = 3;
 
@@ -16,10 +19,11 @@ class EarwigFilamentActuator {
 
   void dump();
   
-  void initialize(IServo& pusherServo, IServo& movingClampServo, IServo& fixedClampServo) {
+  void initialize(IServo& pusherServo, IServo& movingClampServo, IServo& fixedClampServo, Pcf8574SwitchInfo filamentDetectorSwitchInfo) {
                           this->pusherServo = &pusherServo;
                           this->movingClampServo = &movingClampServo;
                           this->fixedClampServo = &fixedClampServo;
+                          this->filamentDetector =  new Pcf8574FilamentDetector(filamentDetectorSwitchInfo);
 
                          }
 
@@ -38,6 +42,7 @@ class EarwigFilamentActuator {
   IServo* pusherServo = nullptr;
   IServo* movingClampServo = nullptr;
   IServo* fixedClampServo = nullptr;
+  IFilamentDetector* filamentDetector = nullptr;
   float clampingDelayMillis;
   float movementDelayMillis;
   float mmToExtrude;

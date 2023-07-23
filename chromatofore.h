@@ -33,8 +33,8 @@ G28 T1 B C X ; Home all axes, say for loading or unloading filament.
 The following commands are parsed, but the functionality is not yet implemented:
 
 
-G1 T1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.  (Parsed by
-functionality is not yet implemented in the actuator!)
+G1 T1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.  (Parsed
+by functionality is not yet implemented in the actuator!)
 
 
 */
@@ -42,14 +42,19 @@ functionality is not yet implemented in the actuator!)
 #pragma once
 
 #include <Arduino.h>
-#include <earwig.h>
-#include <i2cConfiguration.h>
-#include <pca9685Servo.h>
 #include <string.h>
+
+#include "earwig.h"
+#include "i2cConfiguration.h"
+#include "pca9685Servo.h"
+#include "pcf8574Switch.h"
+#include "pcf8574FilamentDetector.h"
 
 const int PUSHER = 0;
 const int MOVING_CLAMP = 1;
 const int FIXED_CLAMP = 2;
+
+const int FILAMENT_DETECTOR = 3;
 
 class ChromatoforeFilamentChanger {
  private:
@@ -83,11 +88,13 @@ class ChromatoforeFilamentChanger {
   ChromatoforeFilamentChanger(int size = 64);
   ~ChromatoforeFilamentChanger();
 
-  bool configureForI2C(int i2cActuatorCount, int i2cServoCount,
-                       int servoConfiguration[][4],
-                       I2CConfiguration& i2cConfiguration,
-                       EarwigFilamentActuator iC2Actuators[],
-                       Pca9685PinServo i2cServos[]);
+  bool configureForI2C(int i2cActuatorCount, 
+                        int i2cServoCount,
+                        int servoConfiguration[][4], 
+                        int gpioConfiguration[][4],
+                        I2CConfiguration& i2cConfiguration,
+                        EarwigFilamentActuator iC2Actuators[],
+                        Pca9685PinServo i2cServos[]);
 
   void begin();
   void loop();

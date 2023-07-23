@@ -8,6 +8,7 @@ ChromatoforeFilamentChanger changer(I2C_ACTUATOR_COUNT);
 EarwigFilamentActuator iC2Actuators[I2C_ACTUATOR_COUNT];
 Pca9685PinServo i2cServos[I2C_ACTUATOR_COUNT*SERVOS_PER_ACTUATOR];
 
+
 I2CConfiguration i2cConfiguration;
 
 
@@ -27,6 +28,15 @@ int servoConfiguration[][4] = {
   {0x41, 11, 3, FIXED_CLAMP},        
 }; 
 
+// The pins on the PCF8574 are numbered in the opposite direction from the servo board:
+int gpioConfiguration[][4] = {
+   // I2C, pin, actuator, role
+  {0x22, 7, 0, FILAMENT_DETECTOR},
+  {0x22, 6, 1, FILAMENT_DETECTOR},
+  {0x22, 5, 2, FILAMENT_DETECTOR},
+  {0x22, 4, 3, FILAMENT_DETECTOR},
+};
+
 bool setupFailed = false;
 
 void setup() {
@@ -42,7 +52,7 @@ void setup() {
   Serial.flush();
   i2cConfiguration.begin();
   Serial.println("Done with i2cConfiguration.begin()");
-  changer.configureForI2C(I2C_ACTUATOR_COUNT, i2cServoCount, servoConfiguration, i2cConfiguration, iC2Actuators, i2cServos);
+  changer.configureForI2C(I2C_ACTUATOR_COUNT, i2cServoCount, servoConfiguration, gpioConfiguration, i2cConfiguration, iC2Actuators, i2cServos);
   
   changer.setCurrentFilament(1);  // Todo:  Add filament detector to show what filament is loaded.
   changer.begin();

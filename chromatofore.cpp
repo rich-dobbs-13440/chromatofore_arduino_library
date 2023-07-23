@@ -1,7 +1,8 @@
 #include "chromatofore.h"
 
 #include <EEPROM.h>
-#include <pca9685Servo.h>
+#include "pca9685Servo.h"
+#include "pcf8574FilamentDetector.h"
 
 #include "debugLog.h"
 
@@ -478,6 +479,7 @@ void ChromatoforeFilamentChanger::initializeEEPROM() {
 bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
                                                   int i2cServoCount,
                                                   int servoConfiguration[][4],
+                                                  int gpioConfiguration[][4],
                                                   I2CConfiguration& i2cConfiguration, 
                                                   EarwigFilamentActuator iC2Actuators[],
                                                   Pca9685PinServo i2cServos[]) {
@@ -526,7 +528,9 @@ bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
             fixedClamp.i2cAddress),
         fixedClamp.pin);
 
-    iC2Actuators[actuatorIndex].initialize(*pusherServo, *movingClampServo, *fixedClampServo);
+    Pcf8574SwitchInfo filamentDetectorInfo = getPcf8574SwitchInfo(gpioConfiguration, i2cActuatorCount, actuatorIndex, FILAMENT_DETECTOR);
+
+    iC2Actuators[actuatorIndex].initialize(*pusherServo, *movingClampServo, *fixedClampServo, filamentDetectorInfo);
     addActuator(actuatorIndex, &iC2Actuators[actuatorIndex]);
   }
   return true;
