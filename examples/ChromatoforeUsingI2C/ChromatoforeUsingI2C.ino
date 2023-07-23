@@ -5,12 +5,6 @@
 const int I2C_ACTUATOR_COUNT = 4;
 ChromatoforeFilamentChanger changer(I2C_ACTUATOR_COUNT);
 
-EarwigFilamentActuator iC2Actuators[I2C_ACTUATOR_COUNT];
-Pca9685PinServo i2cServos[I2C_ACTUATOR_COUNT*SERVOS_PER_ACTUATOR];
-
-
-I2CConfiguration i2cConfiguration;
-
 
 int servoConfiguration[][4] = {
   // I2C, pin, actuator, role
@@ -45,21 +39,23 @@ void setup() {
   delay(2000);
 
   int i2cServoCount = sizeof(servoConfiguration) / sizeof(servoConfiguration[0]);
-  if (i2cServoCount != I2C_ACTUATOR_COUNT*SERVOS_PER_ACTUATOR) {;
-    debugLog("Bad servoConfiguration - size mismatch: ", i2cServoCount, I2C_ACTUATOR_COUNT*SERVOS_PER_ACTUATOR);
+  if (i2cServoCount != I2C_ACTUATOR_COUNT*SERVOS_PER_EARWIG_ACTUATOR) {;
+    debugLog("Bad servoConfiguration - size mismatch: ", i2cServoCount, I2C_ACTUATOR_COUNT*SERVOS_PER_EARWIG_ACTUATOR);
   };//  
-  Serial.println("Start i2cConfiguration.begin()");
-  Serial.flush();
-  i2cConfiguration.begin();
-  Serial.println("Done with i2cConfiguration.begin()");
-  changer.configureForI2C(I2C_ACTUATOR_COUNT, i2cServoCount, servoConfiguration, gpioConfiguration, i2cConfiguration, iC2Actuators, i2cServos);
   
-  changer.setCurrentFilament(1);  // Todo:  Add filament detector to show what filament is loaded.
+  changer.configureForI2C(I2C_ACTUATOR_COUNT, servoConfiguration, gpioConfiguration);
   changer.begin();
 }
+
+void loop() {
+  changer.loop();
+}
+
 /*
 
-Configuration debugging commands - Use one at a time in the serial monitor.
+Configuration debugging commands:
+
+ - Use one at a time in the serial monitor.
 
 ; Actuator 0
 
@@ -152,6 +148,3 @@ G1 T1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.
 
 */
 
-void loop() {
-  changer.loop();
-}

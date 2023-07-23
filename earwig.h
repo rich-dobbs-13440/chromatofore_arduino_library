@@ -6,7 +6,7 @@
 #include "pcf8574Switch.h"
 #include "pcf8574FilamentDetector.h"
 
-const int SERVOS_PER_ACTUATOR = 3;
+const int SERVOS_PER_EARWIG_ACTUATOR = 3;
 
 class EarwigFilamentActuator {
  public:
@@ -38,6 +38,7 @@ class EarwigFilamentActuator {
   float calculateExtrusionAmount(float startPosition, float endPosition);
   float calculateEndPosition(float startPosition); 
   void home(float fixedClamp, float movingClamp, float pusher);
+  void printSwitchStates();
  private:
   IServo* pusherServo = nullptr;
   IServo* movingClampServo = nullptr;

@@ -1,10 +1,10 @@
 #include "chromatofore.h"
 
 #include <EEPROM.h>
-#include "pca9685Servo.h"
-#include "pcf8574FilamentDetector.h"
 
 #include "debugLog.h"
+#include "pca9685Servo.h"
+#include "pcf8574FilamentDetector.h"
 
 float float_nan = std::numeric_limits<float>::quiet_NaN();
 
@@ -15,6 +15,15 @@ ChromatoforeFilamentChanger::ChromatoforeFilamentChanger(int size)
 
 ChromatoforeFilamentChanger::~ChromatoforeFilamentChanger() {
   delete[] actuatorArray;
+  if (i2cActuators != nullptr) {
+    delete[] i2cActuators;
+  }
+  if (i2cServos != nullptr) {
+    delete[] i2cServos;
+  }
+  if (i2cConfiguration != nullptr) {
+    delete i2cConfiguration;
+  }
 }
 
 void ChromatoforeFilamentChanger::addActuator(
@@ -120,6 +129,7 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
   float f = float_nan;
   float g = float_nan;
   float l = float_nan;
+  float m = float_nan;
   float t = float_nan;
   float x = float_nan;
 
@@ -142,6 +152,8 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
       g = word.substring(1).toFloat();
     } else if (word.startsWith("L")) {
       l = word.substring(1).toFloat();
+    } else if (word.startsWith("M")) {
+      m = word.substring(1).toFloat();
     } else if (word.startsWith("T")) {
       t = word.substring(1).toInt();
     } else if (word.startsWith("X")) {
@@ -239,6 +251,22 @@ void ChromatoforeFilamentChanger::processInputBuffer() {
         debugLog("Value of g doesn't match any case");
         break;
     }
+  } else if (!isnan(m)) {
+    switch (int(m)) {
+      case 119:
+        if (pActuator) {
+          pActuator->printSwitchStates();
+        } else {
+          debugLog("Can't handle home command. b:", b, "c:", c, "x:", x,
+                   "No current actuator found with index:", currentFilament);
+        }
+        break;
+      default:
+        // Code to execute when m doesn't match any supported case
+        debugLog("Value of m doesn't match any case");
+        break;
+    }
+
   } else if (!isnan(t)) {
     debugLog("Handle tool change command. New tool index:", t);
     selectNextFilament(t);
@@ -477,16 +505,21 @@ void ChromatoforeFilamentChanger::initializeEEPROM() {
 }
 
 bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
-                                                  int i2cServoCount,
                                                   int servoConfiguration[][4],
-                                                  int gpioConfiguration[][4],
-                                                  I2CConfiguration& i2cConfiguration, 
-                                                  EarwigFilamentActuator iC2Actuators[],
-                                                  Pca9685PinServo i2cServos[]) {
-  for (int actuatorIndex = 0; actuatorIndex < i2cActuatorCount; actuatorIndex++) {
+                                                  int gpioConfiguration[][4]) {
+  i2cConfiguration = new I2CConfiguration;
+  i2cConfiguration->begin();
+  i2cActuators = new EarwigFilamentActuator[i2cActuatorCount];
+  this->i2cActuatorCount = i2cActuatorCount;
+  i2cServoCount = i2cActuatorCount * SERVOS_PER_EARWIG_ACTUATOR;
+  i2cServos = new Pca9685PinServo[i2cServoCount];
+
+  for (int actuatorIndex = 0; actuatorIndex < i2cActuatorCount;
+       actuatorIndex++) {
     Pca9685ServoInfo pusher = getPca9685ServoInfo(
         servoConfiguration, i2cServoCount, actuatorIndex, PUSHER);
-    debugLog("pusher servoIndex:", pusher.servoIndex, " ic2 address:", pusher.i2cAddress, "pin:", pusher.pin);
+    debugLog("pusher servoIndex:", pusher.servoIndex,
+             " ic2 address:", pusher.i2cAddress, "pin:", pusher.pin);
     if (pusher.servoIndex < 0) {
       debugLog("Missing configuration for actuator: ", actuatorIndex,
                " Role = PUSHER");
@@ -495,12 +528,13 @@ bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
     Pca9685PinServo *pusherServo = &i2cServos[pusher.servoIndex];
     pusherServo->initialize(
         "pusherServo",
-        i2cConfiguration.getPca9685ServoDriverFromAddress(pusher.i2cAddress),
+        i2cConfiguration->getPca9685ServoDriverFromAddress(pusher.i2cAddress),
         pusher.pin);
 
     Pca9685ServoInfo movingClamp = getPca9685ServoInfo(
         servoConfiguration, i2cServoCount, actuatorIndex, MOVING_CLAMP);
-    debugLog("movingClamp servoIndex:", movingClamp.servoIndex, " ic2 address:", movingClamp.i2cAddress, "pin:", movingClamp.pin);        
+    debugLog("movingClamp servoIndex:", movingClamp.servoIndex,
+             " ic2 address:", movingClamp.i2cAddress, "pin:", movingClamp.pin);
     if (movingClamp.servoIndex < 0) {
       debugLog("Missing configuration for actuator: ", actuatorIndex,
                " Role = MOVING_CLAMP");
@@ -509,13 +543,14 @@ bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
     Pca9685PinServo *movingClampServo = &i2cServos[movingClamp.servoIndex];
     movingClampServo->initialize(
         "movingClampServo",
-        i2cConfiguration.getPca9685ServoDriverFromAddress(
+        i2cConfiguration->getPca9685ServoDriverFromAddress(
             movingClamp.i2cAddress),
         movingClamp.pin);
 
     Pca9685ServoInfo fixedClamp = getPca9685ServoInfo(
         servoConfiguration, i2cServoCount, actuatorIndex, FIXED_CLAMP);
-    debugLog("fixedClamp servoIndex:", fixedClamp.servoIndex, " ic2 address:", fixedClamp.i2cAddress, "pin:", fixedClamp.pin); 
+    debugLog("fixedClamp servoIndex:", fixedClamp.servoIndex,
+             " ic2 address:", fixedClamp.i2cAddress, "pin:", fixedClamp.pin);
     if (fixedClamp.servoIndex < 0) {
       debugLog("Missing configuration for actuator: ", actuatorIndex,
                " Role = FIXED_CLAMP");
@@ -524,14 +559,17 @@ bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
     Pca9685PinServo *fixedClampServo = &i2cServos[fixedClamp.servoIndex];
     fixedClampServo->initialize(
         "fixedClampServo",
-        i2cConfiguration.getPca9685ServoDriverFromAddress(
+        i2cConfiguration->getPca9685ServoDriverFromAddress(
             fixedClamp.i2cAddress),
         fixedClamp.pin);
 
-    Pcf8574SwitchInfo filamentDetectorInfo = getPcf8574SwitchInfo(gpioConfiguration, i2cActuatorCount, actuatorIndex, FILAMENT_DETECTOR);
+    Pcf8574SwitchInfo filamentDetectorInfo = getPcf8574SwitchInfo(
+        gpioConfiguration, i2cActuatorCount, actuatorIndex, FILAMENT_DETECTOR);
 
-    iC2Actuators[actuatorIndex].initialize(*pusherServo, *movingClampServo, *fixedClampServo, filamentDetectorInfo);
-    addActuator(actuatorIndex, &iC2Actuators[actuatorIndex]);
+    i2cActuators[actuatorIndex].initialize(*pusherServo, *movingClampServo,
+                                           *fixedClampServo,
+                                           filamentDetectorInfo);
+    addActuator(actuatorIndex, &i2cActuators[actuatorIndex]);
   }
   return true;
 }

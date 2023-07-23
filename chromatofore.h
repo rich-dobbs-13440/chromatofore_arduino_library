@@ -37,6 +37,8 @@ G1 T1 E10 F10 : Extrude 10 mm of filament, feed rate currently ignore.  (Parsed
 by functionality is not yet implemented in the actuator!)
 
 
+M119 T0; Report the endstop state - at this time just whether filament is detected or not.
+
 */
 
 #pragma once
@@ -79,6 +81,12 @@ class ChromatoforeFilamentChanger {
   int nextFilament = -1;     // None selected
   bool echoCharacters = false;
 
+  I2CConfiguration* i2cConfiguration = nullptr;
+  EarwigFilamentActuator* i2cActuators = nullptr;
+  Pca9685PinServo* i2cServos = nullptr;
+  int i2cActuatorCount = 0;
+  int i2cServoCount = 0;
+
   void handleSerial();
   void processInputBuffer();
   void acknowledgeCommand(const String& command);
@@ -89,12 +97,8 @@ class ChromatoforeFilamentChanger {
   ~ChromatoforeFilamentChanger();
 
   bool configureForI2C(int i2cActuatorCount, 
-                        int i2cServoCount,
                         int servoConfiguration[][4], 
-                        int gpioConfiguration[][4],
-                        I2CConfiguration& i2cConfiguration,
-                        EarwigFilamentActuator iC2Actuators[],
-                        Pca9685PinServo i2cServos[]);
+                        int gpioConfiguration[][4]);
 
   void begin();
   void loop();
