@@ -119,6 +119,10 @@ public:
       delay(1000 * intervalSeconds);
     }
   }
+  byte getI2CAddress() const {
+    return i2cAddress;
+
+  }
 private:
   byte i2cAddress;
   PCF8574 pcf8574;

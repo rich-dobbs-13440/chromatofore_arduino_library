@@ -17,9 +17,15 @@ ChromatoforeFilamentChanger::~ChromatoforeFilamentChanger() {
   delete[] actuatorArray;
   if (i2cActuators != nullptr) {
     delete[] i2cActuators;
+    i2cActuators = nullptr;
   }
   if (i2cServos != nullptr) {
     delete[] i2cServos;
+    i2cServos = nullptr;
+  }
+  if (i2cFilamentDetectors != nullptr) {
+    delete[] i2cFilamentDetectors;
+    i2cFilamentDetectors = nullptr;
   }
   if (i2cConfiguration != nullptr) {
     delete i2cConfiguration;
@@ -509,10 +515,12 @@ bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
                                                   int gpioConfiguration[][4]) {
   i2cConfiguration = new I2CConfiguration;
   i2cConfiguration->begin();
+
   i2cActuators = new EarwigFilamentActuator[i2cActuatorCount];
   this->i2cActuatorCount = i2cActuatorCount;
   i2cServoCount = i2cActuatorCount * SERVOS_PER_EARWIG_ACTUATOR;
   i2cServos = new Pca9685PinServo[i2cServoCount];
+  i2cFilamentDetectors = new Pcf8574FilamentDetector[i2cActuatorCount];
 
   for (int actuatorIndex = 0; actuatorIndex < i2cActuatorCount;
        actuatorIndex++) {
@@ -565,10 +573,28 @@ bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
 
     Pcf8574SwitchInfo filamentDetectorInfo = getPcf8574SwitchInfo(
         gpioConfiguration, i2cActuatorCount, actuatorIndex, FILAMENT_DETECTOR);
+    if (filamentDetectorInfo.actuator < 0) {
+      debugLog("Missing configuration for actuator: ", actuatorIndex,
+               "Role = FILAMENT_DETECTOR");
+      return false;
+    }
+
+    PCF8574GPIOMultiplexer *filamentDetectorMultiplexer =
+        i2cConfiguration->getGpioMultiplexerFromAddress(
+            filamentDetectorInfo.i2cAddress);
+    if (filamentDetectorMultiplexer == nullptr) {
+      debugLog("Can't find a PCF8574 GPIO Multiplexer with addrees of ",
+               filamentDetectorInfo.i2cAddress);
+      return false;
+    }
+    Pcf8574FilamentDetector *i2cFilamentDetector =
+        &i2cFilamentDetectors[filamentDetectorInfo.actuator];
+    i2cFilamentDetector->initialize(filamentDetectorInfo,
+                                    *filamentDetectorMultiplexer);
 
     i2cActuators[actuatorIndex].initialize(*pusherServo, *movingClampServo,
                                            *fixedClampServo,
-                                           filamentDetectorInfo);
+                                           *i2cFilamentDetector);
     addActuator(actuatorIndex, &i2cActuators[actuatorIndex]);
   }
   return true;

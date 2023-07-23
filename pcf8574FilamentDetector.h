@@ -4,16 +4,19 @@
 
 class Pcf8574FilamentDetector : public IFilamentDetector {
  private:
-  String id;
-  PCF8574GPIOMultiplexer* multiplexer;
+  int actuator = -1;
   int pin = -1;
+  PCF8574GPIOMultiplexer* multiplexer = nullptr;
 
  public:
-  Pcf8574FilamentDetector(Pcf8574SwitchInfo filamentDetectorSwitchInfo) {}
+  Pcf8574FilamentDetector() {}
 
-  void initialize(PCF8574GPIOMultiplexer*  multiplexer) {
-    this->multiplexer = multiplexer;
+  void initialize( Pcf8574SwitchInfo filamentDetectorSwitchInfo, PCF8574GPIOMultiplexer& multiplexer) {
+      actuator = filamentDetectorSwitchInfo.actuator;
+      pin = filamentDetectorSwitchInfo.pin;
+      this->multiplexer = &multiplexer;
   }
+
 
   void begin() override {
   };

@@ -1,31 +1,31 @@
 #pragma once
 
 #include <Arduino.h>
-#include "iServo.h"
+
 #include "iFilamentDetector.h"
-#include "pcf8574Switch.h"
-#include "pcf8574FilamentDetector.h"
+#include "iServo.h"
 
 const int SERVOS_PER_EARWIG_ACTUATOR = 3;
 
 class EarwigFilamentActuator {
  public:
   EarwigFilamentActuator();
+  ~EarwigFilamentActuator();
   // Disable copy constructor
-  EarwigFilamentActuator(const EarwigFilamentActuator&) = delete; 
+  EarwigFilamentActuator(const EarwigFilamentActuator&) = delete;
   // Disable copy assignment operator
-  EarwigFilamentActuator& operator=(const EarwigFilamentActuator&) = delete; 
-   
+  EarwigFilamentActuator& operator=(const EarwigFilamentActuator&) = delete;
 
   void dump();
-  
-  void initialize(IServo& pusherServo, IServo& movingClampServo, IServo& fixedClampServo, Pcf8574SwitchInfo filamentDetectorSwitchInfo) {
-                          this->pusherServo = &pusherServo;
-                          this->movingClampServo = &movingClampServo;
-                          this->fixedClampServo = &fixedClampServo;
-                          this->filamentDetector =  new Pcf8574FilamentDetector(filamentDetectorSwitchInfo);
 
-                         }
+  void initialize(IServo& pusherServo, IServo& movingClampServo,
+                  IServo& fixedClampServo,
+                  IFilamentDetector& filamentDetector) {
+    this->pusherServo = &pusherServo;
+    this->movingClampServo = &movingClampServo;
+    this->fixedClampServo = &fixedClampServo;
+    this->filamentDetector = &filamentDetector;
+  }
 
   void begin(int minimumFixedClampServoAngle, int maximumFixedClampServoAngle,
              int minimumMovingClampServoAngle, int maximumMovingClampServoAngle,
@@ -36,9 +36,10 @@ class EarwigFilamentActuator {
   void setFixedClampServoAngle(int angle) { fixedClampServo->write(angle); }
   void extrude(float mmOfFilament, float mmPerMinuteFeedrate);
   float calculateExtrusionAmount(float startPosition, float endPosition);
-  float calculateEndPosition(float startPosition); 
+  float calculateEndPosition(float startPosition);
   void home(float fixedClamp, float movingClamp, float pusher);
   void printSwitchStates();
+
  private:
   IServo* pusherServo = nullptr;
   IServo* movingClampServo = nullptr;
@@ -47,8 +48,7 @@ class EarwigFilamentActuator {
   float clampingDelayMillis;
   float movementDelayMillis;
   float mmToExtrude;
-  //int state;
+  // int state;
   String state;  // For development
   unsigned long nextActionMillis;
-
 };

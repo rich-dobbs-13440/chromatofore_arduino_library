@@ -62,7 +62,7 @@ void processSerialInput(I2CConfiguration& i2cConfiguration) {
             int boardIndex = atoi(boardIndexStr);
             int pinNumber = atoi(pinNumberStr);
             if (boardIndex >= 0 && pinNumber >= 0) {
-              PCF8574GPIOMultiplexer* gpioMultiplexer = i2cConfiguration.GetGPIOMultiplexer(boardIndex);
+              PCF8574GPIOMultiplexer* gpioMultiplexer = i2cConfiguration.GetGpioMultiplexer(boardIndex);
               if (gpioMultiplexer) {
                 bool pinState = gpioMultiplexer->readPin(pinNumber);
                 Serial.print("GPIO Pin ");
@@ -88,7 +88,7 @@ void processSerialInput(I2CConfiguration& i2cConfiguration) {
           if (boardIndexStr != NULL) {
             int boardIndex = atoi(boardIndexStr);
             if (boardIndex >= 0) {
-              PCF8574GPIOMultiplexer* gpioMultiplexer = i2cConfiguration.GetGPIOMultiplexer(boardIndex);
+              PCF8574GPIOMultiplexer* gpioMultiplexer = i2cConfiguration.GetGpioMultiplexer(boardIndex);
               if (gpioMultiplexer) {
                 for (int pinNumber = 0; pinNumber < 8; pinNumber++) {
                   bool pinState = gpioMultiplexer->readPin(pinNumber);
@@ -116,7 +116,7 @@ void processSerialInput(I2CConfiguration& i2cConfiguration) {
             int boardIndex = atoi(boardIndexStr);
             int seconds = atoi(secondsStr);
             if (boardIndex >= 0 && seconds >= 0) {
-              PCF8574GPIOMultiplexer* gpioMultiplexer = i2cConfiguration.GetGPIOMultiplexer(boardIndex);
+              PCF8574GPIOMultiplexer* gpioMultiplexer = i2cConfiguration.GetGpioMultiplexer(boardIndex);
               if (gpioMultiplexer) {
                 gpioMultiplexer->pcf8574Loop(seconds);
               } else {

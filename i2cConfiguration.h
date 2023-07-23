@@ -84,13 +84,24 @@ class I2CConfiguration {
 
   bool isScanned() { return scanned; }
 
-  PCF8574GPIOMultiplexer* getGPIOMultiplexer(int index) {
+  PCF8574GPIOMultiplexer* getGpioMultiplexer(int index) {
     if (index < boardCount[BoardType::PCF8574_GPIO_Multiplexer]) {
       return static_cast<PCF8574GPIOMultiplexer*>(
           boards[BoardType::PCF8574_GPIO_Multiplexer][index]);
     } else {
       return nullptr;
     }
+  }
+
+  PCF8574GPIOMultiplexer* getGpioMultiplexerFromAddress(int i2cAddress) {
+    for (int index = 0; index < MAX_DEVICES_PER_BOARD_TYPE; index++) {
+      auto multiplexer = static_cast<PCF8574GPIOMultiplexer*>(
+          boards[BoardType::PCF8574_GPIO_Multiplexer][index]);
+      if (multiplexer->getI2CAddress() == i2cAddress) {
+        return multiplexer;
+      }
+    }
+    return nullptr;
   }
 
   PCA9685ServoDriver* getPCA9685ServoDriver(int index) {

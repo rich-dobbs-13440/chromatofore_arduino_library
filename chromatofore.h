@@ -84,6 +84,7 @@ class ChromatoforeFilamentChanger {
   I2CConfiguration* i2cConfiguration = nullptr;
   EarwigFilamentActuator* i2cActuators = nullptr;
   Pca9685PinServo* i2cServos = nullptr;
+  Pcf8574FilamentDetector* i2cFilamentDetectors = nullptr;
   int i2cActuatorCount = 0;
   int i2cServoCount = 0;
 

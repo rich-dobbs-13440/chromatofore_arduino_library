@@ -30,6 +30,13 @@ EarwigFilamentActuator::EarwigFilamentActuator() {
   nextActionMillis = -1;
 }
 
+EarwigFilamentActuator::~EarwigFilamentActuator() {
+  if (filamentDetector != nullptr) {
+    delete filamentDetector;
+    filamentDetector = nullptr;
+  }
+}
+
 void EarwigFilamentActuator::dump() {
   Serial.print("Address:");
   Serial.println((uintptr_t)this, HEX);
