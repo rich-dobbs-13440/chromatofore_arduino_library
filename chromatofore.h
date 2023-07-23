@@ -51,6 +51,7 @@ M119 T0; Report the endstop state - at this time just whether filament is detect
 #include "pca9685Servo.h"
 #include "pcf8574Switch.h"
 #include "pcf8574FilamentDetector.h"
+#include "iSerialHandler.h"
 
 const int PUSHER = 0;
 const int MOVING_CLAMP = 1;
@@ -64,8 +65,8 @@ class ChromatoforeFilamentChanger {
   EarwigFilamentActuator** actuatorArray;
   int actuatorArraySize;
   int baudRate = 9600;
-  static const int BUFFER_SIZE = 256;  // Size of the input buffer
-  char inputBuffer[BUFFER_SIZE];       // Input buffer to store characters
+  ISerialHandler* serialHandler = nullptr;
+
 
   // EEPROM constants
   static const int TOOL_EEPROM_OFFSET = 100;
@@ -76,10 +77,10 @@ class ChromatoforeFilamentChanger {
   static const uint8_t DEFAULT_MAXIMUM_ANGLE_C = 100;
   static const uint8_t DEFAULT_MAXIMUM_ANGLE_X = 140;
 
-  int bufferIndex = 0;       // Index to keep track of the buffer position
+
   int currentFilament = -1;  // None selected
   int nextFilament = -1;     // None selected
-  bool echoCharacters = false;
+  
 
   I2CConfiguration* i2cConfiguration = nullptr;
   EarwigFilamentActuator* i2cActuators = nullptr;
@@ -88,10 +89,6 @@ class ChromatoforeFilamentChanger {
   int i2cActuatorCount = 0;
   int i2cServoCount = 0;
 
-  void handleSerial();
-  void processInputBuffer();
-  void acknowledgeCommand(const String& command);
-  byte calculateChecksum(const String& command);
 
  public:
   ChromatoforeFilamentChanger(int size = 64);
@@ -109,6 +106,9 @@ class ChromatoforeFilamentChanger {
   EarwigFilamentActuator* getActuator(int index);
   void selectNextFilament(int index) { nextFilament = index; }
   void setCurrentFilament(int index) { currentFilament = index; }
+  int getCurrentFilament() {
+      return currentFilament;
+  }
   void rememberMinimumAngleForTool(int tool, float b, float c, float x);
   void rememberMaximumAngleForTool(int tool, float b, float c, float x);
 
