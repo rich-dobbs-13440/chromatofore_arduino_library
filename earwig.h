@@ -39,6 +39,7 @@ class EarwigFilamentActuator {
   float calculateEndPosition(float startPosition);
   void home(float fixedClamp, float movingClamp, float pusher);
   void printSwitchStates();
+  bool isBusy();
 
  private:
   IServo* pusherServo = nullptr;

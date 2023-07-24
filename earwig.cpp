@@ -47,6 +47,10 @@ void EarwigFilamentActuator::dump() {
   debugLog("nextActionMillis:", nextActionMillis);
 }
 
+bool EarwigFilamentActuator::isBusy() {
+  return state != IDLE_STATE;
+}
+
 void EarwigFilamentActuator::begin(int minimumFixedClampServoAngle,
                                    int maximumFixedClampServoAngle,
                                    int minimumMovingClampServoAngle,

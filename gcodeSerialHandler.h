@@ -132,9 +132,12 @@ class GcodeSerialHandler : public ISerialHandler {
     this->changer = &changer;
   }
 
+  GcodeCommand parseGcodeLine(const char *format, ...);
+  void executeGcodeCommand(const GcodeCommand& cmd); 
+
  private:
   GcodeCommand processInputBuffer();
-  void executeGcodeCommand(const GcodeCommand& cmd); 
+  
   void acknowledgeCommand(const String &command);
   byte calculateChecksum(const String &command);
 

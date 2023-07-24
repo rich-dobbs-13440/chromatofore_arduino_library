@@ -95,7 +95,10 @@ void ChromatoforeFilamentChanger::loop() {
   EarwigFilamentActuator *pActuator = getActuator(currentFilament);
   if (pActuator) {
     pActuator->loop();
-  }
+    if (pActuator->isBusy()) {
+      return;
+    }
+  } 
   serialHandler->handleSerial();
 }
 

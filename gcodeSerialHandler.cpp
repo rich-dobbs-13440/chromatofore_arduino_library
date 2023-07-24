@@ -12,8 +12,7 @@ void GcodeSerialHandler::handleSerial() {
     }
     while (Serial.available() > 0) {
       char serialChar = Serial.read();
-      if (echoCharacters)
-        debugLog("Received char", serialChar, int(serialChar));
+      if (echoCharacters) debugLog("Received char", serialChar, int(serialChar));
 
       if (serialChar != '\n' && serialChar != '\r') {
         // Add character to the buffer
@@ -30,7 +29,9 @@ void GcodeSerialHandler::handleSerial() {
         GcodeCommand gcode_command = processInputBuffer();
         bool success = commandBuffer.put(gcode_command);
         if (!success) {
-          debugLog("Internal error: Failed to add command to buffer, despite buffer supposedly being empty");
+          debugLog(
+              "Internal error: Failed to add command to buffer, despite buffer "
+              "supposedly being empty");
         }
       }
     }
@@ -41,23 +42,32 @@ GcodeCommand GcodeSerialHandler::processInputBuffer() {
   String gcode_line(inputBuffer);
   acknowledgeCommand(gcode_line);
   debugLog("Received ", gcode_line);
-  char *commentMarker = strchr(inputBuffer, ';');
+  return parseGcodeLine(inputBuffer);
+}
+
+GcodeCommand GcodeSerialHandler::parseGcodeLine(const char *format, ...) {
+  char input[128];
+  va_list args;
+  va_start(args, format);
+  vsnprintf(input, sizeof(input), format, args);
+  va_end(args);
+
+  char *commentMarker = strchr(input, ';');
   if (commentMarker != nullptr) {
     *commentMarker = '\0';  // Truncate the buffer at the comment marker
   }
   if (debug) {
-    debugLog("After removal of comment ", inputBuffer);
+    debugLog("After removal of comment ", input);
   }
   GcodeCommand cmd;
 
   char *token;
   char delimiter = ' ';
-  token = strtok(inputBuffer, &delimiter);
+  token = strtok(input, &delimiter);
 
   while (token != NULL) {
     String word = token;
-    if (word.length() >=
-        2) {  // Ensure the word has at least a letter and a number.
+    if (word.length() >= 2) {  // Ensure the word has at least a letter and a number.
       char letter = word[0];
       float value = word.substring(1).toFloat();
       cmd.set(letter, value);
@@ -97,17 +107,14 @@ void GcodeSerialHandler::executeGcodeCommand(const GcodeCommand &cmd) {
           }
         } else if (!isnan(cmd.get('E'))) {
           if (pActuator) {
-            debugLog("Handle extrusion command. e:", cmd.get('E'),
-                     "f:", cmd.get('F'), "q:", cmd.get('Q'));
+            debugLog("Handle extrusion command. e:", cmd.get('E'), "f:", cmd.get('F'), "q:", cmd.get('Q'));
             float mm_of_filament = cmd.get('E');
             float feedrate_mm_per_minute = cmd.get('F');
             bool use_filament_detector = !isnan(cmd.get('Q'));
             bool require_filament = cmd.get('G') > 0;
-            pActuator->extrude(mm_of_filament, feedrate_mm_per_minute,
-                               use_filament_detector, require_filament);
+            pActuator->extrude(mm_of_filament, feedrate_mm_per_minute, use_filament_detector, require_filament);
           } else {
-            debugLog("Can't handle extrusion command. e:", cmd.get('E'),
-                     "f:", cmd.get('F'),
+            debugLog("Can't handle extrusion command. e:", cmd.get('E'), "f:", cmd.get('F'),
                      "No current actuator found with index:", currentFilament);
           }
         } else if (!isnan(cmd.get('X'))) {
@@ -130,14 +137,11 @@ void GcodeSerialHandler::executeGcodeCommand(const GcodeCommand &cmd) {
           int tool = cmd.get('T');
           int choice = cmd.get('L');
           if (choice == 0) {
-            changer->rememberMinimumAngleForTool(tool, cmd.get('B'),
-                                                 cmd.get('C'), cmd.get('X'));
+            changer->rememberMinimumAngleForTool(tool, cmd.get('B'), cmd.get('C'), cmd.get('X'));
           } else if (choice == 1) {
-            changer->rememberMaximumAngleForTool(tool, cmd.get('B'),
-                                                 cmd.get('C'), cmd.get('X'));
+            changer->rememberMaximumAngleForTool(tool, cmd.get('B'), cmd.get('C'), cmd.get('X'));
           } else {
-            debugLog(
-                "Unrecognized l value for programmable data input command");
+            debugLog("Unrecognized l value for programmable data input command");
           }
         }
         break;
@@ -145,12 +149,10 @@ void GcodeSerialHandler::executeGcodeCommand(const GcodeCommand &cmd) {
         debugLog("Handle home command");
         // Home axis
         if (pActuator) {
-          debugLog("Handle home command. b:", cmd.get('B'), "c:", cmd.get('C'),
-                   "x:", cmd.get('X'));
+          debugLog("Handle home command. b:", cmd.get('B'), "c:", cmd.get('C'), "x:", cmd.get('X'));
           pActuator->home(cmd.get('B'), cmd.get('C'), cmd.get('X'));
         } else {
-          debugLog("Can't handle home command. b:", cmd.get('B'),
-                   "c:", cmd.get('C'), "x:", cmd.get('X'),
+          debugLog("Can't handle home command. b:", cmd.get('B'), "c:", cmd.get('C'), "x:", cmd.get('X'),
                    "No current actuator found with index:", currentFilament);
         }
         break;
@@ -165,11 +167,22 @@ void GcodeSerialHandler::executeGcodeCommand(const GcodeCommand &cmd) {
         if (pActuator) {
           pActuator->printSwitchStates();
         } else {
-          debugLog("Can't handle print switch states command M119. t: ",
-                   cmd.get('T'),
+          debugLog("Can't handle print switch states command M119. t: ", cmd.get('T'),
                    "No current actuator found with index:", currentFilament);
         }
         break;
+      case 1001: {
+        // Test case 1
+        int t = currentFilament;
+        float e = isnan(cmd.get('E')) ? 100 : cmd.get('E');
+        commandBuffer.put(parseGcodeLine("G1 T%d E-300 Q1", t));  // Retract filament until filament sensor is hit;
+        commandBuffer.put(parseGcodeLine("G1 T%d E%f", t, e));    // Extrude forward
+        commandBuffer.put(parseGcodeLine("G1 T%d E-300 Q1", t));  // Retract filament until filament sensor is hit;
+        commandBuffer.put(parseGcodeLine("G1 T%d E%f", t, e));    // Extrude forward
+        commandBuffer.put(parseGcodeLine("G1 T%d E-300 Q1", t));  // Retract filament until filament sensor is hit;
+        commandBuffer.put(parseGcodeLine("G1 T%d E%f", t, e));    // Extrude forward
+      }
+
       default:
         // Code to execute when m doesn't match any supported case
         debugLog("Value of m doesn't match any case");
