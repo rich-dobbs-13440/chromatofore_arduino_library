@@ -86,7 +86,7 @@ void ChromatoforeFilamentChanger::begin() {
     }
   }
 
-  auto gcodeSerialHandler = new GcodeSerialHandler();
+  auto gcodeSerialHandler = new GcodeSerialHandler(20);
   gcodeSerialHandler->initialize(*this);
   serialHandler = gcodeSerialHandler;
 }

@@ -2,11 +2,13 @@
 
 float float_nan = std::numeric_limits<float>::quiet_NaN();
 
-
 void GcodeSerialHandler::handleSerial() {
-  if (Serial.available() > 0) {
+  if (!commandBuffer.isEmpty()) {
+    GcodeCommand command = commandBuffer.get();
+    executeGcodeCommand(command);
+  } else if (Serial.available() > 0) {
     if (debug) {
-        debugLog("Serial.available() is true");
+      debugLog("Serial.available() is true");
     }
     while (Serial.available() > 0) {
       char serialChar = Serial.read();
@@ -24,14 +26,18 @@ void GcodeSerialHandler::handleSerial() {
       } else {
         // Line ending character encountered
         inputBuffer[bufferIndex] = '\0';  // Null-terminate the buffer
-        bufferIndex = 0;                  // Reset buffer index
-        processInputBuffer();             // Process the received line
+        bufferIndex = 0;
+        GcodeCommand gcode_command = processInputBuffer();
+        bool success = commandBuffer.put(gcode_command);
+        if (!success) {
+          debugLog("Internal error: Failed to add command to buffer, despite buffer supposedly being empty");
+        }
       }
     }
   }
 }
 
-void GcodeSerialHandler::processInputBuffer() {
+GcodeCommand GcodeSerialHandler::processInputBuffer() {
   String gcode_line(inputBuffer);
   acknowledgeCommand(gcode_line);
   debugLog("Received ", gcode_line);
@@ -42,110 +48,75 @@ void GcodeSerialHandler::processInputBuffer() {
   if (debug) {
     debugLog("After removal of comment ", inputBuffer);
   }
-  
+  GcodeCommand cmd;
 
   char *token;
   char delimiter = ' ';
   token = strtok(inputBuffer, &delimiter);
 
-  float b = float_nan;
-  float c = float_nan;
-  float e = float_nan;
-  float f = float_nan;
-  float g = float_nan;
-  float l = float_nan;
-  float m = float_nan;
-  float q = float_nan;
-  float t = float_nan;
-  float x = float_nan;
-
-  // debugLog("e", e);
   while (token != NULL) {
     String word = token;
-    // debugLog("word", word);
-    if (word.startsWith("B")) {
-      b = word.substring(1).toFloat();
-    } else if (word.startsWith("C")) {
-      c = word.substring(1).toFloat();
-    } else if (word.startsWith("E")) {
-      e = word.substring(1).toFloat();
-    } else if (word.startsWith("E")) {
-      e = word.substring(1).toFloat();
-    } else if (word.startsWith("F")) {
-      f = word.substring(1).toFloat();
-    } else if (word.startsWith("G")) {
-      g = word.substring(1).toFloat();
-    } else if (word.startsWith("L")) {
-      l = word.substring(1).toFloat();
-    } else if (word.startsWith("M")) {
-      m = word.substring(1).toFloat();
-    } else if (word.startsWith("Q")) {
-      q = word.substring(1).toFloat();      
-    } else if (word.startsWith("T")) {
-      t = word.substring(1).toInt();
-    } else if (word.startsWith("X")) {
-      x = word.substring(1).toFloat();
+    if (word.length() >=
+        2) {  // Ensure the word has at least a letter and a number.
+      char letter = word[0];
+      float value = word.substring(1).toFloat();
+      cmd.set(letter, value);
     }
     token = strtok(NULL, &delimiter);
   }
+  return cmd;
+}
 
-  if (debug) {
-    debugLog("b:", b);
-    debugLog("c:", c);
-    debugLog("e:", e);
-    debugLog("f:", f);
-    debugLog("g:", g);
-    debugLog("q:", q);
-    debugLog("t:", t);
-    debugLog("x:", x);
-  }
-
-  if (!isnan(t)) {
-    int tool = t;
+void GcodeSerialHandler::executeGcodeCommand(const GcodeCommand &cmd) {
+  if (!isnan(cmd.get('T'))) {
+    int tool = cmd.get('T');
     changer->setCurrentFilament(tool);
   }
   int currentFilament = changer->getCurrentFilament();
   EarwigFilamentActuator *pActuator = changer->getActuator(currentFilament);
-  if (!isnan(g)) {
-    switch (int(g)) {
+  if (!isnan(cmd.get('G'))) {
+    switch (int(cmd.get('G'))) {
       case 1:  // Linear interpolation movement
-        if (!isnan(b)) {
+        if (!isnan(cmd.get('B'))) {
           if (pActuator) {
-            debugLog("Handle fixed clamp command. Angle:", b);
-            int angle = b;
+            debugLog("Handle fixed clamp command. Angle:", cmd.get('B'));
+            int angle = cmd.get('B');
             pActuator->setFixedClampServoAngle(angle);
           } else {
-            debugLog("Can't handle fixed clamp command. Angle:", b,
+            debugLog("Can't handle fixed clamp command. Angle:", cmd.get('B'),
                      "No current actuator found with index:", currentFilament);
           }
-        } else if (!isnan(c)) {
+        } else if (!isnan(cmd.get('C'))) {
           if (pActuator) {
-            debugLog("Handle clamp command. Angle:", c);
-            int angle = c;
+            debugLog("Handle clamp command. Angle:", cmd.get('C'));
+            int angle = cmd.get('C');
             pActuator->setMovingClampServoAngle(angle);
           } else {
-            debugLog("Can't handle clamp command. Angle:", c,
+            debugLog("Can't handle clamp command. Angle:", cmd.get('C'),
                      "No current actuator found with index:", currentFilament);
           }
-        } else if (!isnan(e)) {
+        } else if (!isnan(cmd.get('E'))) {
           if (pActuator) {
-            debugLog("Handle extrusion command. e:", e, "f:", f, "q:", q);
-            float mm_of_filament = e;
-            float feedrate_mm_per_minute = f;
-            bool use_filament_detector = !isnan(q);
-            bool require_filament = q > 0;
-            pActuator->extrude(mm_of_filament, feedrate_mm_per_minute, use_filament_detector, require_filament);
+            debugLog("Handle extrusion command. e:", cmd.get('E'),
+                     "f:", cmd.get('F'), "q:", cmd.get('Q'));
+            float mm_of_filament = cmd.get('E');
+            float feedrate_mm_per_minute = cmd.get('F');
+            bool use_filament_detector = !isnan(cmd.get('Q'));
+            bool require_filament = cmd.get('G') > 0;
+            pActuator->extrude(mm_of_filament, feedrate_mm_per_minute,
+                               use_filament_detector, require_filament);
           } else {
-            debugLog("Can't handle extrusion command. e:", e, "f:", f,
+            debugLog("Can't handle extrusion command. e:", cmd.get('E'),
+                     "f:", cmd.get('F'),
                      "No current actuator found with index:", currentFilament);
           }
-        } else if (!isnan(x)) {
+        } else if (!isnan(cmd.get('X'))) {
           if (pActuator) {
-            debugLog("Handle move command. Angle:", x);
-            int angle = x;
+            debugLog("Handle move command. Angle:", cmd.get('X'));
+            int angle = cmd.get('X');
             pActuator->setPusherServoAngle(angle);
           } else {
-            debugLog("Can't handle move command. Angle:", x,
+            debugLog("Can't handle move command. Angle:", cmd.get('X'),
                      "No current actuator found with index:", currentFilament);
           }
         } else {
@@ -156,12 +127,14 @@ void GcodeSerialHandler::processInputBuffer() {
       case 10:  //
         debugLog("Handle programmable data input command");
         {
-          int tool = t;
-          int choice = l;
+          int tool = cmd.get('T');
+          int choice = cmd.get('L');
           if (choice == 0) {
-            changer->rememberMinimumAngleForTool(tool, b, c, x);
+            changer->rememberMinimumAngleForTool(tool, cmd.get('B'),
+                                                 cmd.get('C'), cmd.get('X'));
           } else if (choice == 1) {
-            changer->rememberMaximumAngleForTool(tool, b, c, x);
+            changer->rememberMaximumAngleForTool(tool, cmd.get('B'),
+                                                 cmd.get('C'), cmd.get('X'));
           } else {
             debugLog(
                 "Unrecognized l value for programmable data input command");
@@ -172,10 +145,12 @@ void GcodeSerialHandler::processInputBuffer() {
         debugLog("Handle home command");
         // Home axis
         if (pActuator) {
-          debugLog("Handle home command. b:", b, "c:", c, "x:", x);
-          pActuator->home(b, c, x);
+          debugLog("Handle home command. b:", cmd.get('B'), "c:", cmd.get('C'),
+                   "x:", cmd.get('X'));
+          pActuator->home(cmd.get('B'), cmd.get('C'), cmd.get('X'));
         } else {
-          debugLog("Can't handle home command. b:", b, "c:", c, "x:", x,
+          debugLog("Can't handle home command. b:", cmd.get('B'),
+                   "c:", cmd.get('C'), "x:", cmd.get('X'),
                    "No current actuator found with index:", currentFilament);
         }
         break;
@@ -184,13 +159,14 @@ void GcodeSerialHandler::processInputBuffer() {
         debugLog("Value of g doesn't match any case");
         break;
     }
-  } else if (!isnan(m)) {
-    switch (int(m)) {
+  } else if (!isnan(cmd.get('M'))) {
+    switch (int(cmd.get('M'))) {
       case 119:
         if (pActuator) {
           pActuator->printSwitchStates();
         } else {
-          debugLog("Can't handle print switch states command M119. t: ", t, 
+          debugLog("Can't handle print switch states command M119. t: ",
+                   cmd.get('T'),
                    "No current actuator found with index:", currentFilament);
         }
         break;
@@ -200,9 +176,9 @@ void GcodeSerialHandler::processInputBuffer() {
         break;
     }
 
-  } else if (!isnan(t)) {
-    debugLog("Handle tool change command. New tool index:", t);
-    changer->selectNextFilament(t);
+  } else if (!isnan(cmd.get('T'))) {
+    debugLog("Handle tool change command. New tool index:", cmd.get('T'));
+    changer->selectNextFilament(cmd.get('T'));
   }
 }
 

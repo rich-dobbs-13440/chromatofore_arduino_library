@@ -18,7 +18,13 @@
 			"string": "cpp",
 			"vector": "cpp",
 			"string_view": "cpp",
-			"initializer_list": "cpp"
+			"initializer_list": "cpp",
+			"memory": "cpp",
+			"istream": "cpp",
+			"functional": "cpp",
+			"tuple": "cpp",
+			"utility": "cpp",
+			"numbers": "cpp"
 		}
 	}
 }

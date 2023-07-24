@@ -41,15 +41,100 @@ M119 T0; Report the endstop state - at this time just whether filament is detect
 #include "chromatofore.h"
 
 
+struct GcodeCommand {
+  float values[26]; // 26 for each letter parameter from A to Z.
+
+  // The values should be initialized to NaN.
+  GcodeCommand() {
+    for (int i = 0; i < 26; i++) {
+      values[i] = std::numeric_limits<float>::quiet_NaN();
+    }
+  }
+
+  // Helper function to set values by letter.
+  void set(char letter, float value) {
+    letter = toupper(letter);
+    int index = letter - 'A'; // 'A' is 0, 'B' is 1, etc.
+    if (index >= 0 && index < 26) {
+      values[index] = value;
+    }
+  }
+
+  // Helper function to get values by letter.
+  float get(char letter) const {
+    int index = letter - 'A';
+    if (index >= 0 && index < 26) {
+      return values[index];
+    }
+    return std::numeric_limits<float>::quiet_NaN();
+  }
+
+  bool isSet(char letter) const {
+    return !std::isnan(get(letter));
+  }
+};
+
+class GcodeCommandBuffer {
+ public:
+  GcodeCommandBuffer(int buffer_size)
+      : buffer_size(buffer_size),
+        gcode_buffer(new GcodeCommand[buffer_size]()),
+        head(0),
+        tail(0),
+        current_size(0) {}
+
+  ~GcodeCommandBuffer() {
+    delete[] gcode_buffer;
+  }
+
+  bool put(const GcodeCommand& command) {
+    if (current_size >= buffer_size) {
+      return false; // Buffer overflow.
+    }
+    gcode_buffer[tail] = command;
+    tail = (tail + 1) % buffer_size;
+    current_size++;
+    return true; // Successfully added to buffer.
+  }
+
+  GcodeCommand get() {
+    if (current_size == 0) {
+      // Buffer underflow, return a null command (all NANs)
+      return GcodeCommand();
+    }
+    GcodeCommand command = gcode_buffer[head];
+    head = (head + 1) % buffer_size;
+    current_size--;
+    return command;
+  }
+
+  bool isEmpty() const {
+    return current_size == 0;
+  }
+
+ private:
+  int buffer_size;
+  GcodeCommand* gcode_buffer;
+  int head;
+  int tail;
+  int current_size;
+};
+
+
+
 class GcodeSerialHandler : public ISerialHandler {
  public:
+  GcodeSerialHandler(int gcode_buffer_size)
+      : commandBuffer(gcode_buffer_size) {}
+
   void handleSerial() override;
   void initialize(ChromatoforeFilamentChanger& changer) {
     this->changer = &changer;
   }
 
  private:
-  void processInputBuffer();
+  GcodeCommand processInputBuffer();
+  void executeGcodeCommand(const GcodeCommand& cmd); 
   void acknowledgeCommand(const String &command);
   byte calculateChecksum(const String &command);
 
@@ -60,4 +145,6 @@ class GcodeSerialHandler : public ISerialHandler {
 
   ChromatoforeFilamentChanger* changer = nullptr;
   bool debug = false;
+
+  GcodeCommandBuffer commandBuffer;
 };
