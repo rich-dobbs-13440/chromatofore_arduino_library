@@ -1,2 +1,5 @@
 BasedOnStyle: Google
 ColumnLimit: 120
+PointerDeclaration: Left
+SpacesBeforeTrailingComments: -1
+

@@ -9,9 +9,9 @@ const int ACTUATOR = 2;
 const int ROLE = 3;
 
 
-Pcf8574SwitchInfo getPcf8574SwitchInfo(int gpioConfiguration[][4], int numRows, int actuator, int role) {
+Pcf8574SwitchInfo getPcf8574SwitchInfo(int rowCount, int gpioConfiguration[][4], int actuator, int role) {
     
-    for (int row = 0; row < numRows; row++) {
+    for (int row = 0; row < rowCount; row++) {
         if (gpioConfiguration[row][ACTUATOR] == actuator && gpioConfiguration[row][ROLE] == role) {
             Pcf8574SwitchInfo result;
             

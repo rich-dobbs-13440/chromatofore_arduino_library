@@ -35,6 +35,10 @@ EarwigFilamentActuator::~EarwigFilamentActuator() {
     delete filamentDetector;
     filamentDetector = nullptr;
   }
+  if (movingClampLimitSwitch != nullptr) {
+    delete movingClampLimitSwitch;
+    movingClampLimitSwitch = nullptr;
+  }
 }
 
 void EarwigFilamentActuator::dump() {
@@ -209,6 +213,18 @@ void EarwigFilamentActuator::printSwitchStates() {
     }
   } else {
     debugLog("No filament detector in Earwig.");
+  }
+  if (movingClampLimitSwitch) {
+    auto state = movingClampLimitSwitch->read();
+    if (state == SwitchState::Triggered) {
+      debugLog("Limit Switch Triggered!");
+    } else if (state == SwitchState::Untriggered) {
+      debugLog("Limit switch not Triggered");
+    } else {
+      debugLog("Error in printSwitchStates", int(state));
+    }
+  } else {
+    debugLog("No limit_switch in Earwig.");
   }
 }
 

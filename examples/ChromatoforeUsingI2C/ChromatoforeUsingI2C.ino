@@ -2,19 +2,24 @@
 #include <earwig.h>
 #include <i2cConfiguration.h>
 
-const int I2C_ACTUATOR_COUNT = 4; // Update to match your physical configuration.
-ChromatoforeFilamentChanger changer(I2C_ACTUATOR_COUNT);
+int i2cActuatorCount = 4; // Update to match your physical configuration.
+ChromatoforeFilamentChanger changer(i2cActuatorCount);
 
 // Update based on jumper settings for your specific I2C boards:
 int servoBoard0Address = 0x41;
+// int servoBoard1Address = ???
+
 int gpioBoard0Address = 0x22;
+int gpioBoard1Address = 0x24;
+// int gpioBoard2Address = ???
 
 
 // The pins on the PCA9685 breakout board are number from left to right, 
 // when the board is positions so the text is upright.
 
 int sb0 = servoBoard0Address;
-int servoConfiguration[][4] = {
+// int sb1 = servoBoard1Address;
+int i2CservoConfiguration[][4] = {
   // I2C, pin, actuator, role
   {sb0, 0, 0, PUSHER},
   {sb0, 1, 0, MOVING_CLAMP},
@@ -33,12 +38,17 @@ int servoConfiguration[][4] = {
 
 // The pins on the PCF8574 are numbered in the opposite direction from the servo board:
 int gb0 = gpioBoard0Address;
-int gpioConfiguration[][4] = {
+int gb1 = gpioBoard1Address;
+int i2cGpioConfiguration[][4] = {
    // I2C, pin, actuator, role
   {gb0, 7, 0, FILAMENT_DETECTOR},
   {gb0, 6, 1, FILAMENT_DETECTOR},
   {gb0, 5, 2, FILAMENT_DETECTOR},
   {gb0, 4, 3, FILAMENT_DETECTOR},
+  {gb1, 3, 0, MOVING_CLAMP_LIMIT_SWITCH},
+  {gb1, 2, 1, MOVING_CLAMP_LIMIT_SWITCH},
+  {gb1, 1, 2, MOVING_CLAMP_LIMIT_SWITCH},
+  {gb1, 0, 3, MOVING_CLAMP_LIMIT_SWITCH},  
   // Add configuration of second daughter GPIO boards here!  
 };
 
@@ -47,15 +57,19 @@ bool setupFailed = false;
 void setup() {
 
   Serial.begin(9600);  // Initialize serial communication
-  delay(2000);
-
-  int i2cServoCount = sizeof(servoConfiguration) / sizeof(servoConfiguration[0]);
-  if (i2cServoCount != I2C_ACTUATOR_COUNT*SERVOS_PER_EARWIG_ACTUATOR) {;
-    debugLog("Bad servoConfiguration - size mismatch: ", i2cServoCount, I2C_ACTUATOR_COUNT*SERVOS_PER_EARWIG_ACTUATOR);
-  };//  
-  
-  changer.configureForI2C(I2C_ACTUATOR_COUNT, servoConfiguration, gpioConfiguration);
+  delay(1000);
   changer.begin();
+
+
+
+  int i2cServoCount = sizeof(i2CservoConfiguration) / sizeof(i2CservoConfiguration[0]);
+  int i2cGpioCount = sizeof(i2cGpioConfiguration) / sizeof(i2cGpioConfiguration[0]); 
+  
+  changer.configureForI2C(i2cActuatorCount, i2cServoCount, i2CservoConfiguration, i2cGpioCount, i2cGpioConfiguration);
+
+  // TODO:  Table driven configuration of actuators and other components driven directly f
+  //        from the Arduino.
+  
 }
 
 void loop() {

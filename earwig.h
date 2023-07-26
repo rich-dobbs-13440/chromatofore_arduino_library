@@ -4,6 +4,8 @@
 
 #include "iFilamentDetector.h"
 #include "iServo.h"
+#include "iSwitch.h"
+#include "pcf8574Switch.h"
 
 const int SERVOS_PER_EARWIG_ACTUATOR = 3;
 
@@ -18,13 +20,17 @@ class EarwigFilamentActuator {
 
   void dump();
 
-  void initialize(IServo& pusherServo, IServo& movingClampServo,
+  void initialize(IServo& pusherServo, 
+                  IServo& movingClampServo,
                   IServo& fixedClampServo,
-                  IFilamentDetector& filamentDetector) {
+                  IFilamentDetector& filamentDetector, 
+                  Pcf8574Switch* movingClampLimitSwitch 
+                  ) {
     this->pusherServo = &pusherServo;
     this->movingClampServo = &movingClampServo;
     this->fixedClampServo = &fixedClampServo;
     this->filamentDetector = &filamentDetector;
+    this->movingClampLimitSwitch = movingClampLimitSwitch; // Owership is passed to this actuator.
   }
 
   void begin(int minimumFixedClampServoAngle, int maximumFixedClampServoAngle,
@@ -46,6 +52,7 @@ class EarwigFilamentActuator {
   IServo* movingClampServo = nullptr;
   IServo* fixedClampServo = nullptr;
   IFilamentDetector* filamentDetector = nullptr;
+  Pcf8574Switch* movingClampLimitSwitch = nullptr;  
   float clampingDelayMillis;
   float movementDelayMillis;
   float mmToExtrude;

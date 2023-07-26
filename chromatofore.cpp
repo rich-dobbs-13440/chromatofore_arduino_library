@@ -3,14 +3,12 @@
 #include <EEPROM.h>
 
 #include "debugLog.h"
+#include "gcodeSerialHandler.h"
 #include "pca9685Servo.h"
 #include "pcf8574FilamentDetector.h"
-#include "gcodeSerialHandler.h"
+#include "pcf8574Switch.h"
 
-
-
-ChromatoforeFilamentChanger::ChromatoforeFilamentChanger(int size)
-    : actuatorArraySize(size) {
+ChromatoforeFilamentChanger::ChromatoforeFilamentChanger(int size) : actuatorArraySize(size) {
   actuatorArray = new EarwigFilamentActuator *[actuatorArraySize]();
 }
 
@@ -38,8 +36,7 @@ ChromatoforeFilamentChanger::~ChromatoforeFilamentChanger() {
   }
 }
 
-void ChromatoforeFilamentChanger::addActuator(
-    int index, EarwigFilamentActuator *actuator) {
+void ChromatoforeFilamentChanger::addActuator(int index, EarwigFilamentActuator *actuator) {
   if (index >= 0 && index < actuatorArraySize) {
     actuatorArray[index] = actuator;
   }
@@ -59,10 +56,8 @@ EarwigFilamentActuator *ChromatoforeFilamentChanger::getActuator(int index) {
 }
 
 void ChromatoforeFilamentChanger::begin() {
-
-
   debugLog("--------------");
-  debugLog("Chromatofore Version:", version);
+  debugLog("Chromatofore Version:", version());
   debugLog("Upload Date:", __DATE__);
   debugLog("Upload Time:", __TIME__);
   debugLog("Baud Rate:", baudRate);
@@ -98,18 +93,13 @@ void ChromatoforeFilamentChanger::loop() {
     if (pActuator->isBusy()) {
       return;
     }
-  } 
+  }
   serialHandler->handleSerial();
 }
 
-
-
-void ChromatoforeFilamentChanger::rememberMinimumAngleForTool(int tool, float b,
-                                                              float c,
-                                                              float x) {
+void ChromatoforeFilamentChanger::rememberMinimumAngleForTool(int tool, float b, float c, float x) {
   if (tool < 0 || tool >= actuatorArraySize) {
-    debugLog("In rememberMaximumAngleForTool, invalid tool index", tool,
-             "No values remembered");
+    debugLog("In rememberMaximumAngleForTool, invalid tool index", tool, "No values remembered");
     return;
   }
 
@@ -123,8 +113,7 @@ void ChromatoforeFilamentChanger::rememberMinimumAngleForTool(int tool, float b,
       EEPROM.put(offset, minB);
       debugLog("Current b mininum", getMinimumAngleB(tool));
     } else {
-      debugLog("In rememberMinimumAngleForTool, b is out of range 0-180", b,
-               "No value remembered");
+      debugLog("In rememberMinimumAngleForTool, b is out of range 0-180", b, "No value remembered");
     }
   }
 
@@ -135,8 +124,7 @@ void ChromatoforeFilamentChanger::rememberMinimumAngleForTool(int tool, float b,
       EEPROM.put(offset + sizeof(uint8_t), minC);
       debugLog("Current c mininum", getMinimumAngleC(tool));
     } else {
-      debugLog("In rememberMinimumAngleForTool, c is out of range 0-180", c,
-               "No value remembered");
+      debugLog("In rememberMinimumAngleForTool, c is out of range 0-180", c, "No value remembered");
     }
   }
 
@@ -147,23 +135,18 @@ void ChromatoforeFilamentChanger::rememberMinimumAngleForTool(int tool, float b,
       EEPROM.put(offset + sizeof(uint8_t) * 2, minX);
       debugLog("Current x mininum", getMinimumAngleX(tool));
     } else {
-      debugLog("In rememberMinimumAngleForTool, x is out of range 0-180", x,
-               "No value remembered");
+      debugLog("In rememberMinimumAngleForTool, x is out of range 0-180", x, "No value remembered");
     }
   }
 }
 
-void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
-                                                              float c,
-                                                              float x) {
+void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b, float c, float x) {
   if (tool < 0 || tool >= actuatorArraySize) {
-    debugLog("In rememberMaximumAngleForTool, invalid tool index", tool,
-             "No values remembered");
+    debugLog("In rememberMaximumAngleForTool, invalid tool index", tool, "No values remembered");
     return;
   }
   // Calculate the EEPROM offset based on the tool index
-  int offset =
-      TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 3;
+  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 3;
 
   // Check if b value is specified and store it
   if (!isnan(b)) {
@@ -172,8 +155,7 @@ void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
       EEPROM.put(offset, maxB);
       debugLog("Current b maximum", getMaximumAngleB(tool));
     } else {
-      debugLog("In rememberMaximumAngleForTool, b is out of range 0-180", b,
-               "No value remembered");
+      debugLog("In rememberMaximumAngleForTool, b is out of range 0-180", b, "No value remembered");
     }
   }
 
@@ -184,8 +166,7 @@ void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
       EEPROM.put(offset + sizeof(uint8_t), maxC);
       debugLog("Current c maximum", getMaximumAngleC(tool));
     } else {
-      debugLog("In rememberMaximumAngleForTool, c is out of range 0-180", c,
-               "No value remembered");
+      debugLog("In rememberMaximumAngleForTool, c is out of range 0-180", c, "No value remembered");
     }
   }
 
@@ -196,8 +177,7 @@ void ChromatoforeFilamentChanger::rememberMaximumAngleForTool(int tool, float b,
       EEPROM.put(offset + sizeof(uint8_t) * 2, maxX);
       debugLog("Current x maximum", getMaximumAngleX(tool));
     } else {
-      debugLog("In rememberMaximumAngleForTool, x is out of range 0-180", x,
-               "No value remembered");
+      debugLog("In rememberMaximumAngleForTool, x is out of range 0-180", x, "No value remembered");
     }
   }
 }
@@ -224,8 +204,7 @@ int ChromatoforeFilamentChanger::getMinimumAngleC(int tool) const {
   }
 
   // Calculate the EEPROM offset based on the tool index and named constant
-  int offset =
-      TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t);
+  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t);
 
   // Retrieve and return the stored minimum angle for axis C
   uint8_t c;
@@ -240,8 +219,7 @@ int ChromatoforeFilamentChanger::getMinimumAngleX(int tool) const {
   }
 
   // Calculate the EEPROM offset based on the tool index and named constant
-  int offset =
-      TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 2;
+  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 2;
 
   // Retrieve and return the stored minimum angle for axis X
   uint8_t x;
@@ -257,8 +235,7 @@ int ChromatoforeFilamentChanger::getMaximumAngleB(int tool) const {
 
   // Calculate the EEPROM offset based on the tool index, named constant, and
   // minimum angle offset
-  int offset =
-      TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 3;
+  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 3;
 
   // Retrieve and return the stored maximum angle for axis B
   uint8_t b;
@@ -274,8 +251,7 @@ int ChromatoforeFilamentChanger::getMaximumAngleC(int tool) const {
 
   // Calculate the EEPROM offset based on the tool index, named constant, and
   // minimum angle offset
-  int offset =
-      TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 4;
+  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 4;
 
   // Retrieve and return the stored maximum angle for axis C
   uint8_t c;
@@ -291,8 +267,7 @@ int ChromatoforeFilamentChanger::getMaximumAngleX(int tool) const {
 
   // Calculate the EEPROM offset based on the tool index, named constant, and
   // minimum angle offset
-  int offset =
-      TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 5;
+  int offset = TOOL_EEPROM_OFFSET + (tool * sizeof(uint8_t) * 6) + sizeof(uint8_t) * 5;
 
   // Retrieve and return the stored maximum angle for axis X
   uint8_t x;
@@ -308,100 +283,102 @@ void ChromatoforeFilamentChanger::initializeEEPROM() {
 
   // Initialize each tool with named constants for each axis
   for (int tool = 0; tool < actuatorArraySize; tool++) {
-    rememberMinimumAngleForTool(tool, DEFAULT_MINIMUM_ANGLE_B,
-                                DEFAULT_MINIMUM_ANGLE_C,
-                                DEFAULT_MINIMUM_ANGLE_X);
-    rememberMaximumAngleForTool(tool, DEFAULT_MAXIMUM_ANGLE_B,
-                                DEFAULT_MAXIMUM_ANGLE_C,
-                                DEFAULT_MAXIMUM_ANGLE_X);
+    rememberMinimumAngleForTool(tool, DEFAULT_MINIMUM_ANGLE_B, DEFAULT_MINIMUM_ANGLE_C, DEFAULT_MINIMUM_ANGLE_X);
+    rememberMaximumAngleForTool(tool, DEFAULT_MAXIMUM_ANGLE_B, DEFAULT_MAXIMUM_ANGLE_C, DEFAULT_MAXIMUM_ANGLE_X);
   }
 }
 
-bool ChromatoforeFilamentChanger::configureForI2C(int i2cActuatorCount,
-                                                  int servoConfiguration[][4],
-                                                  int gpioConfiguration[][4]) {
+bool ChromatoforeFilamentChanger::configureForI2C(int actuatorCount, int servoCount, int servoConfiguration[][4], int pinCount, int pinConfiguration[][4]) {
+
+
   i2cConfiguration = new I2CConfiguration;
   i2cConfiguration->begin();
 
-  i2cActuators = new EarwigFilamentActuator[i2cActuatorCount];
-  this->i2cActuatorCount = i2cActuatorCount;
+
+                                              
+  if (servoCount != actuatorCount*SERVOS_PER_EARWIG_ACTUATOR) {;
+    debugLog("Bad I2C servoConfiguration, size mismatch.  Expected ", actuatorCount*SERVOS_PER_EARWIG_ACTUATOR , " but got , ", servoCount);
+  };
+
+  i2cActuators = new EarwigFilamentActuator[actuatorCount];
+  this->i2cActuatorCount = actuatorCount;
   i2cServoCount = i2cActuatorCount * SERVOS_PER_EARWIG_ACTUATOR;
   i2cServos = new Pca9685PinServo[i2cServoCount];
   i2cFilamentDetectors = new Pcf8574FilamentDetector[i2cActuatorCount];
 
-  for (int actuatorIndex = 0; actuatorIndex < i2cActuatorCount;
-       actuatorIndex++) {
-    Pca9685ServoInfo pusher = getPca9685ServoInfo(
-        servoConfiguration, i2cServoCount, actuatorIndex, PUSHER);
-    debugLog("pusher servoIndex:", pusher.servoIndex,
-             " ic2 address:", pusher.i2cAddress, "pin:", pusher.pin);
+  for (int actuatorIndex = 0; actuatorIndex < i2cActuatorCount; actuatorIndex++) {
+    Pca9685ServoInfo pusher = getPca9685ServoInfo(servoConfiguration, i2cServoCount, actuatorIndex, PUSHER);
+    debugLog("pusher servoIndex:", pusher.servoIndex, " ic2 address:", pusher.i2cAddress, "pin:", pusher.pin);
     if (pusher.servoIndex < 0) {
-      debugLog("Missing configuration for actuator: ", actuatorIndex,
-               " Role = PUSHER");
+      debugLog("Missing configuration for actuator: ", actuatorIndex, " Role = PUSHER");
       return false;
     }
     Pca9685PinServo *pusherServo = &i2cServos[pusher.servoIndex];
-    pusherServo->initialize(
-        "pusherServo",
-        i2cConfiguration->getPca9685ServoDriverFromAddress(pusher.i2cAddress),
-        pusher.pin);
+    pusherServo->initialize("pusherServo", i2cConfiguration->getPca9685ServoDriverFromAddress(pusher.i2cAddress),
+                            pusher.pin);
 
-    Pca9685ServoInfo movingClamp = getPca9685ServoInfo(
-        servoConfiguration, i2cServoCount, actuatorIndex, MOVING_CLAMP);
-    debugLog("movingClamp servoIndex:", movingClamp.servoIndex,
-             " ic2 address:", movingClamp.i2cAddress, "pin:", movingClamp.pin);
+    Pca9685ServoInfo movingClamp = getPca9685ServoInfo(servoConfiguration, i2cServoCount, actuatorIndex, MOVING_CLAMP);
+    debugLog("movingClamp servoIndex:", movingClamp.servoIndex, " ic2 address:", movingClamp.i2cAddress,
+             "pin:", movingClamp.pin);
     if (movingClamp.servoIndex < 0) {
-      debugLog("Missing configuration for actuator: ", actuatorIndex,
-               " Role = MOVING_CLAMP");
+      debugLog("Missing configuration for actuator: ", actuatorIndex, " Role = MOVING_CLAMP");
       return false;
     }
     Pca9685PinServo *movingClampServo = &i2cServos[movingClamp.servoIndex];
-    movingClampServo->initialize(
-        "movingClampServo",
-        i2cConfiguration->getPca9685ServoDriverFromAddress(
-            movingClamp.i2cAddress),
-        movingClamp.pin);
+    movingClampServo->initialize("movingClampServo",
+                                 i2cConfiguration->getPca9685ServoDriverFromAddress(movingClamp.i2cAddress),
+                                 movingClamp.pin);
 
-    Pca9685ServoInfo fixedClamp = getPca9685ServoInfo(
-        servoConfiguration, i2cServoCount, actuatorIndex, FIXED_CLAMP);
-    debugLog("fixedClamp servoIndex:", fixedClamp.servoIndex,
-             " ic2 address:", fixedClamp.i2cAddress, "pin:", fixedClamp.pin);
+    Pca9685ServoInfo fixedClamp = getPca9685ServoInfo(servoConfiguration, i2cServoCount, actuatorIndex, FIXED_CLAMP);
+    debugLog("fixedClamp servoIndex:", fixedClamp.servoIndex, " ic2 address:", fixedClamp.i2cAddress,
+             "pin:", fixedClamp.pin);
     if (fixedClamp.servoIndex < 0) {
-      debugLog("Missing configuration for actuator: ", actuatorIndex,
-               " Role = FIXED_CLAMP");
+      debugLog("Missing configuration for actuator: ", actuatorIndex, " Role = FIXED_CLAMP");
       return false;
     }
     Pca9685PinServo *fixedClampServo = &i2cServos[fixedClamp.servoIndex];
     fixedClampServo->initialize(
-        "fixedClampServo",
-        i2cConfiguration->getPca9685ServoDriverFromAddress(
-            fixedClamp.i2cAddress),
-        fixedClamp.pin);
+        "fixedClampServo", i2cConfiguration->getPca9685ServoDriverFromAddress(fixedClamp.i2cAddress), fixedClamp.pin);
 
-    Pcf8574SwitchInfo filamentDetectorInfo = getPcf8574SwitchInfo(
-        gpioConfiguration, i2cActuatorCount, actuatorIndex, FILAMENT_DETECTOR);
+    // Filament detector is required
+    Pcf8574FilamentDetector *i2cFilamentDetector = nullptr;
+
+    Pcf8574SwitchInfo filamentDetectorInfo =
+        getPcf8574SwitchInfo(pinCount, pinConfiguration, actuatorIndex, FILAMENT_DETECTOR);
     if (filamentDetectorInfo.actuator < 0) {
-      debugLog("Missing configuration for actuator: ", actuatorIndex,
-               "Role = FILAMENT_DETECTOR");
+      debugLog("Missing configuration for actuator: ", actuatorIndex, "Role = FILAMENT_DETECTOR");
       return false;
+    } else {
+      PCF8574GPIOMultiplexer *multiplexer =
+          i2cConfiguration->getGpioMultiplexerFromAddress(filamentDetectorInfo.i2cAddress);
+      if (multiplexer == nullptr) {
+        debugLog("Can't find a PCF8574 GPIO Multiplexer with addrees of ", filamentDetectorInfo.i2cAddress);
+        return false;
+      }
+      i2cFilamentDetector = &i2cFilamentDetectors[actuatorIndex];
+      i2cFilamentDetector->initialize(filamentDetectorInfo, *multiplexer);
     }
 
-    PCF8574GPIOMultiplexer *filamentDetectorMultiplexer =
-        i2cConfiguration->getGpioMultiplexerFromAddress(
-            filamentDetectorInfo.i2cAddress);
-    if (filamentDetectorMultiplexer == nullptr) {
-      debugLog("Can't find a PCF8574 GPIO Multiplexer with addrees of ",
-               filamentDetectorInfo.i2cAddress);
-      return false;
-    }
-    Pcf8574FilamentDetector *i2cFilamentDetector =
-        &i2cFilamentDetectors[filamentDetectorInfo.actuator];
-    i2cFilamentDetector->initialize(filamentDetectorInfo,
-                                    *filamentDetectorMultiplexer);
+    // Moving clamp limit switch  is optional for now.
+    Pcf8574Switch *movingClampLimitSwitch = nullptr;
 
-    i2cActuators[actuatorIndex].initialize(*pusherServo, *movingClampServo,
-                                           *fixedClampServo,
-                                           *i2cFilamentDetector);
+    Pcf8574SwitchInfo limitSwitchInfo =
+        getPcf8574SwitchInfo(pinCount, pinConfiguration, actuatorIndex, MOVING_CLAMP_LIMIT_SWITCH);
+    if (limitSwitchInfo.actuator < 0) {
+      debugLog("Warning:  Missing configuration for moving limit switch for actuator: ", actuatorIndex); 
+      debugLog( "Should have a line for MOVING_CLAMP_LIMIT_SWITCH");
+
+    } else {
+      PCF8574GPIOMultiplexer *multiplexer = i2cConfiguration->getGpioMultiplexerFromAddress(limitSwitchInfo.i2cAddress);
+      if (multiplexer == nullptr) {
+        debugLog("Can't find a PCF8574 GPIO Multiplexer with addrees of ", limitSwitchInfo.i2cAddress);
+        return false;
+      }
+      movingClampLimitSwitch = new Pcf8574Switch(limitSwitchInfo, *multiplexer);
+    }
+
+    i2cActuators[actuatorIndex].initialize(*pusherServo, *movingClampServo, *fixedClampServo, *i2cFilamentDetector,
+                                           movingClampLimitSwitch);
     addActuator(actuatorIndex, &i2cActuators[actuatorIndex]);
   }
   return true;

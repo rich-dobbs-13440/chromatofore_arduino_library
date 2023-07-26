@@ -23,10 +23,11 @@ const int MOVING_CLAMP = 1;
 const int FIXED_CLAMP = 2;
 
 const int FILAMENT_DETECTOR = 3;
+const int MOVING_CLAMP_LIMIT_SWITCH = 4;
 
 class ChromatoforeFilamentChanger {
  private:
-  String version = "0.2a";
+  
   EarwigFilamentActuator** actuatorArray;
   int actuatorArraySize;
   int baudRate = 9600;
@@ -59,9 +60,11 @@ class ChromatoforeFilamentChanger {
   ChromatoforeFilamentChanger(int size = 64);
   ~ChromatoforeFilamentChanger();
 
-  bool configureForI2C(int i2cActuatorCount, 
-                        int servoConfiguration[][4], 
-                        int gpioConfiguration[][4]);
+  String version() {
+    return "0.2f";
+  }
+
+  bool configureForI2C(int actuatorCount, int servoCount, int servoConfiguration[][4], int pinCount, int pinConfiguration[][4]);
 
   void begin();
   void loop();
