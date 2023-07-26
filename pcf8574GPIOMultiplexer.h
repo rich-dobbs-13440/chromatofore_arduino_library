@@ -36,25 +36,23 @@ public:
     Serial.print("PCF8574GPIOMultiplexer, I2C address: 0x");
     Serial.println(i2cAddress, HEX);
   }
+
+
+
   PinState readPin(uint8_t pinNumber) {
-    Serial.print("I2C: 0x");
-    Serial.print(i2cAddress, HEX);
-    Serial.println("  ");
+    uint8_t val = 3;
+    PinState pinState = PinState::ERROR;
     if (pinNumber >= 0 && pinNumber < 8) {
       pcf8574.readBuffer();
-      uint8_t val = pcf8574.digitalRead(pinNumber, true);
-      debugLog("pinNumber", pinNumber, "val: ", val);
+      val = pcf8574.digitalRead(pinNumber, true);
       if (val == HIGH) {
-        debugLog("returning PinState::HIGH");
-        return PinState::HIGH;
+        pinState =  PinState::HIGH;
       } else {
-        debugLog("returning PinState::LOW");
-        return PinState::LOW;
+        pinState =  PinState::LOW;
       };
     }
-
-    debugLog("Bad pin number: ", pinNumber);
-    return PinState::ERROR;
+    debugPin(pinNumber, val, pinState); 
+    return pinState; 
   }
 
   void readAndPrintPins() {
@@ -130,4 +128,16 @@ public:
 private:
   byte i2cAddress;
   PCF8574 pcf8574;
+
+  void debugPin(uint8_t pinNumber, uint8_t val, PinState state) {
+    if (state == PinState::HIGH) {
+      debugLog("I2C: ", asHex(i2cAddress), "pinNumber", pinNumber, "val: ", val, " returning pin state HIGH");
+    } else if (state == PinState::LOW) {
+      debugLog("I2C: ", asHex(i2cAddress), "pinNumber", pinNumber, "val: ", val, " returning pin state LOW");
+    } else if (state == PinState::ERROR) {
+      debugLog("ERROR in reading pin - I2C: ", asHex(i2cAddress), "pinNumber", pinNumber, "val: ", val, " returning pin state LOW");
+    } else {
+      debugLog("INTERNAL ERROR: Unhandled PinState value");
+    }    
+  }  
 };

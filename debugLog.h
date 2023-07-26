@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Serial.h>
+
 static const char* logPrefix = "-- debug --";
 
 template <typename T, typename... Args>
@@ -11,3 +13,6 @@ void debugLog(T first, Args... args) {
   Serial.println();
   Serial.flush();
 }
+
+String asHex(byte byteValue); 
+
