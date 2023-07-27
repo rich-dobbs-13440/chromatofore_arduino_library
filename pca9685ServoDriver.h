@@ -28,7 +28,7 @@ class PCA9685ServoDriver : public iBoard {
         pwmServoDriver.setPWM(pinNumber, 0, pulse);
         return true;
       } else {
-        Serial.println("Bad angle");
+        debugLog("Bad angle", angle, "in setServoAngle, for pin:", pinNumber, " on board: ", asHex(i2cAddress));
         return false;
       }
     } else {

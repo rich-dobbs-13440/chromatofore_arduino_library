@@ -61,7 +61,7 @@ class ChromatoforeFilamentChanger {
   ~ChromatoforeFilamentChanger();
 
   String version() {
-    return "0.2f";
+    return "0.2 - limit switch homing!";
   }
 
   bool configureForI2C(int actuatorCount, int servoCount, int servoConfiguration[][4], int pinCount, int pinConfiguration[][4]);

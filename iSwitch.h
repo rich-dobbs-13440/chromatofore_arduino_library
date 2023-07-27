@@ -11,4 +11,5 @@ class ISwitch {
 public:
   virtual void begin() = 0;
   virtual SwitchState read() = 0;
+  virtual bool Triggered() = 0;
 };

@@ -22,8 +22,7 @@ String MOVE_FILAMENT_STATE = "MOVE_FILAMENT";
 float mmPerStep = 24.0;
 
 EarwigFilamentActuator::EarwigFilamentActuator() {
-  clampingDelayMillis = 1000;
-  movementDelayMillis = 1000;
+
   mmToExtrude = 0.0;
 
   state = IDLE_STATE;
@@ -44,8 +43,11 @@ EarwigFilamentActuator::~EarwigFilamentActuator() {
 void EarwigFilamentActuator::dump() {
   Serial.print("Address:");
   Serial.println((uintptr_t)this, HEX);
-  debugLog("clampingDelayMillis:", clampingDelayMillis);
-  debugLog("movementDelayMillis:", movementDelayMillis);
+  //debugLog("clampingDelayMillis:", clampingDelayMillis);
+  // debugLog("movementDelayMillis:", movementDelayMillis);
+  // debugLog("sweepDelayMillis:", sweepDelayMillis);
+  // debugLog("switchDelayMillis:", switchDelayMillis);
+  
   debugLog("mmToExtrude", mmToExtrude);
   debugLog("state:", state);
   debugLog("nextActionMillis:", nextActionMillis);
@@ -92,20 +94,20 @@ void EarwigFilamentActuator::loop() {
   if (millis() > nextActionMillis) {
     debugLog("Starting state: '", state, "'   mmToExtrude:", mmToExtrude);
     if (state == LOCK_TO_START_STATE) {
-      fixedClampServo->position(CLOSED_POSITION);
-      movingClampServo->position(OPEN_POSITION);
-      nextActionMillis = millis() + clampingDelayMillis;
+      auto expectedArrivalTimeFCS = fixedClampServo->position(CLOSED_POSITION);
+      auto expectedArrivalTimeMCS = movingClampServo->position(OPEN_POSITION);
+      nextActionMillis = max(expectedArrivalTimeFCS, expectedArrivalTimeMCS);
       state = MOVE_TO_START_STATE;
     } else if (state == MOVE_TO_START_STATE) {
 
       float startPosition = mmToExtrude > 0 ? FRONT_POSITION : BACK_POSITION;
-      pusherServo->position(startPosition);
-      nextActionMillis = millis() + movementDelayMillis;
+      auto expectedArrivalTime = pusherServo->position(startPosition);
+      nextActionMillis = expectedArrivalTime;
       state = LOCK_FOR_EXTRUDE_STATE;
     } else if (state == LOCK_FOR_EXTRUDE_STATE) {
-      fixedClampServo->position(OPEN_POSITION);
-      movingClampServo->position(CLOSED_POSITION);
-      nextActionMillis = millis() + clampingDelayMillis;
+      auto expectedArrivalTimeFCS = fixedClampServo->position(OPEN_POSITION);
+      auto expectedArrivalTimeMCS = movingClampServo->position(CLOSED_POSITION);
+      nextActionMillis = max(expectedArrivalTimeFCS, expectedArrivalTimeMCS);
       state = MOVE_FILAMENT_STATE;
     } else if (state == MOVE_FILAMENT_STATE) {
       bool stop_moving = false;
@@ -125,17 +127,19 @@ void EarwigFilamentActuator::loop() {
       if (!stop_moving) {
         float startPosition = mmToExtrude > 0 ? FRONT_POSITION : BACK_POSITION;
         float endPosition = calculateEndPosition(startPosition);
-        pusherServo->position(endPosition);
+        auto expectedArrivalTime = pusherServo->position(endPosition);
         mmToExtrude -= calculateExtrusionAmount(startPosition, endPosition);
-        nextActionMillis = millis() + movementDelayMillis;
+        nextActionMillis = expectedArrivalTime;
       }
       if (!stop_moving && abs(mmToExtrude) > 1) {
         state = LOCK_TO_START_STATE;
       } else {
         mmToExtrude = 0;
-        fixedClampServo->position(OPEN_POSITION);
-        movingClampServo->position(CLOSED_POSITION);
-        delay(clampingDelayMillis);
+        auto expectedArrivalTimeFCS = fixedClampServo->position(OPEN_POSITION);
+        auto expectedArrivalTimeMCS = movingClampServo->position(CLOSED_POSITION);
+        auto expectedArrivalTime = max(expectedArrivalTimeFCS, expectedArrivalTimeMCS);
+        // TODO:  Add an additional state to get rid of this delay!
+        delay(expectedArrivalTime - millis());
         fixedClampServo->atEase();
         movingClampServo->atEase();
         pusherServo->atEase();
@@ -179,6 +183,81 @@ void EarwigFilamentActuator::extrude(float mmOfFilament,
   }
 }
 
+bool EarwigFilamentActuator::home_pusher_and_update_servo_min_angle() {
+  // Get the clamps open and at ease, so that the pusher can move freely.
+  auto expectedArrivalTimeFCS = fixedClampServo->position(OPEN_POSITION);
+  auto expectedArrivalTimeMCS = movingClampServo->position(OPEN_POSITION);
+  auto expectedArrivalTime = max(expectedArrivalTimeFCS, expectedArrivalTimeMCS);
+  delay(expectedArrivalTime - millis());
+  fixedClampServo->atEase();
+  movingClampServo->atEase();  
+  pusherServo->home(movingClampLimitSwitch);
+
+
+
+/*
+  // Get the pusher servo into its start position to begin the sweep.
+  int angle = 90;
+  pusherServo->write(angle);
+  delay(movementDelayMillis + switchDelayMillis);
+  if (movingClampLimitSwitch->read()  != SwitchState::Triggered) {
+    while (movingClampLimitSwitch->read()  != SwitchState::Untriggered) {
+      // Fast sweep servo until limit switch is triggered
+      angle -= 1;
+      pusherServo->write(angle);
+      delay(pusherSweepDelayMillis);
+      if (angle < 0) {
+        debugLog("Failure: At minimum angle of zero, and limit switch not triggered.");
+        debugLog("   Is switch malfunctioning?");
+        debugLog("   Is servo horn installed properly?");
+        debugLog("   Is moving clamp binding?");
+        return false;
+      }
+    }
+    // Now back off a bit.
+    int first_trigger = angle;
+    while(movingClampLimitSwitch->read()  != SwitchState::Untriggered) {
+      angle += 5;
+      pusherServo->write(angle);
+      delay(movementDelayMillis + switchDelayMillis);
+      if (angle > first_trigger + 20) {
+        debugLog("Failure: Moving away from limit switch and it is not released.");
+        debugLog("   Is switch malfunctioning?");
+        debugLog("   Is servo horn installed properly?");
+        debugLog("   Is moving clamp binding?");
+        return false;        
+      }
+    }
+    // Now sweep forward again until limit switch is retriggered.
+    while (movingClampLimitSwitch->read()  != SwitchState::Untriggered) {
+      // Fast sweep servo until limit switch is triggered
+      angle -= 1;
+      if (angle < 0) {
+        debugLog("Failure: At minimum angle of zero, and limit switch not triggered.");
+        debugLog("   Is switch malfunctioning?");
+        debugLog("   Is servo horn installed properly?");
+        debugLog("   Is moving clamp binding?");
+        return false;
+      }
+      pusherServo->write(angle);
+      delay(pusherSweepDelayMillis);         
+    }
+    pusherServo->setMinimumAngle(angle);
+    debugLog("Minumum angle is now:", angle);
+    return true;
+  } else {
+        debugLog("Failure: At starting andle and limit switch is triggered");
+        debugLog("   Is switch malfunctioning?");
+        debugLog("   Is servo horn installed properly?");
+        debugLog("   Is moving clamp binding?");
+        return false;
+  }
+
+*/  
+  return true;
+
+}
+
 void EarwigFilamentActuator::home(float fixedClamp, float movingClamp,
                                   float pusher) {
   // The arguments are either nan or a value.  The exact value is ignored.
@@ -195,7 +274,7 @@ void EarwigFilamentActuator::home(float fixedClamp, float movingClamp,
       movingClampServo->position(OPEN_POSITION);
     }
     if (!isnan(pusher)) {
-      pusherServo->position(0.5);
+      home_pusher_and_update_servo_min_angle();
     }
   }
 }

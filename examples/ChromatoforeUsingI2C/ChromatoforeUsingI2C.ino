@@ -14,7 +14,7 @@ int gpioBoard1Address = 0x24;
 // int gpioBoard2Address = ???
 
 
-// The pins on the PCA9685 breakout board are number from left to right, 
+// The pins on the PCA9685 breakout board are numbered from left to right, 
 // when the board is positions so the text is upright.
 
 int sb0 = servoBoard0Address;
@@ -36,7 +36,9 @@ int i2CservoConfiguration[][4] = {
   // Add configuration of daughter board here!       
 }; 
 
-// The pins on the PCF8574 are numbered in the opposite direction from the servo board:
+// The pins on the PCF8574 are numbered from right to left 
+// when the board is position so the text is upright.  This is 
+// in the opposite direction from the servo board:
 int gb0 = gpioBoard0Address;
 int gb1 = gpioBoard1Address;
 int i2cGpioConfiguration[][4] = {

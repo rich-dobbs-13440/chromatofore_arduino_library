@@ -15,6 +15,7 @@
 
 #include "debugLog.h"
 #include "iServo.h"
+#include "homerServo.h"
 #include "pca9685ServoDriver.h"
 
 struct Pca9685ServoInfo {
@@ -26,7 +27,7 @@ struct Pca9685ServoInfo {
 Pca9685ServoInfo getPca9685ServoInfo(int servoConfiguration[][4], int numRows,
                                      int actuator, int role);
 
-class Pca9685PinServo : public IServo {
+class Pca9685PinServo : public HomerServo {
  private:
   String id;
   PCA9685ServoDriver* servoDriver;
@@ -60,14 +61,16 @@ class Pca9685PinServo : public IServo {
     servoDriver->atEase(pin);
   }
 
-  void write(int angle) {
+  ExpectedArrivalMillis write(int angle) {
     currentAngle = angle;
     servoDriver->setServoAngle(pin, angle);
+    // For now, just use a constant delay.  It would be better to base this on how much the servo moves and the speed of the servo.  
+    return millis() + movementDelayMillis; 
   }
 
-  void position(float relativePosition) {
+  ExpectedArrivalMillis position(float relativePosition) {
     int angle = minimumAngle + relativePosition * (maximumAngle - minimumAngle);
-    write(angle);
+    return write(angle);
   }
   void detach() {}
 
@@ -77,4 +80,12 @@ class Pca9685PinServo : public IServo {
   }
 
   void atEase() { servoDriver->atEase(pin); }
+
+  void setMinimumAngle(int minimumAngle) override {
+    this->minimumAngle = minimumAngle;
+  }
+
+  void setMaximumAngle(int maximumAngle) override {
+    this->maximumAngle = maximumAngle;
+  }  
 };

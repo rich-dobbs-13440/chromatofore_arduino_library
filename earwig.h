@@ -44,6 +44,7 @@ class EarwigFilamentActuator {
   float calculateExtrusionAmount(float startPosition, float endPosition);
   float calculateEndPosition(float startPosition);
   void home(float fixedClamp, float movingClamp, float pusher);
+  bool home_pusher_and_update_servo_min_angle();
   void printSwitchStates();
   bool isBusy();
 
@@ -53,8 +54,7 @@ class EarwigFilamentActuator {
   IServo* fixedClampServo = nullptr;
   IFilamentDetector* filamentDetector = nullptr;
   Pcf8574Switch* movingClampLimitSwitch = nullptr;  
-  float clampingDelayMillis;
-  float movementDelayMillis;
+
   float mmToExtrude;
   // int state;
   String state;  // For development
