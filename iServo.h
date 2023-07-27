@@ -15,6 +15,10 @@ public:
   virtual void dump() = 0;
   virtual void setMinimumAngle(int minimumAngle)  = 0;
   virtual void setMaximumAngle(int maximumAngle)  = 0;
+  virtual int getMinimumAngle() = 0;
+  virtual int getMaximumAngle() = 0;
+  virtual int getCurrentAngle() = 0;
   virtual void home(ISwitch* limitSwitch)  = 0;
+  virtual bool isIdle() = 0; 
 };
 

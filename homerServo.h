@@ -23,27 +23,48 @@ private:
     ISwitch* limitSwitch = nullptr;
     unsigned long stateStartTime;
     unsigned long nextActionTime; 
-    int angle;  
-    int fastSweepInitialAngle;
-    int fast_sweep_increment;
+    int fastSweepInitialAngle = 90;
+    int fastSweepAngleIncrement = 2;  
+    bool debug = true;
+    int minimumAngle = -1;
+    int maximumAngle = -1;
 
 protected:
-    unsigned int  movementDelayMillis;
-    unsigned int  switchDelayMillis;
-    unsigned int  sweepDelayMillis;
+    unsigned int  movementDelayMillis = 1000;
+    unsigned int  switchDelayMillis = 500;
+    unsigned int  sweepDelayMillis = 100;
+    int currentAngle = -1; 
+
+    void dumpState();
 
 public:
     HomerServo();
     void loop() override;
     void home(ISwitch* limitSwitch) override;
+    bool isIdle() override {
+        return currentState == HomingState::Idle;
+    }
+
     static String homingStateToString(HomingState state);
-    // Other methods from IServo interface remain pure virtual
-    // void begin(int minimumAngle, int maximumAngle, float initialRelativePosition) override = 0;
-    // void write(int angle) override = 0;
-    // void position(float relativePosition) override = 0;
-    // void atEase() override = 0;
-    // void detach() override = 0;
-    // void dump() override = 0;
-    // void setMinimumAngle(int minimumAngle) override = 0;
-    // void setMaximumAngle(int maximumAngle) override = 0;
+
+    void setMinimumAngle(int minimumAngle) override {
+        this->minimumAngle = minimumAngle;
+    }
+    void setMaximumAngle(int maximumAngle) override {
+        this->maximumAngle = maximumAngle;
+    }
+    int getMinimumAngle() override {
+        return minimumAngle;
+    }
+    int getMaximumAngle() override {
+        return maximumAngle;
+    }; 
+    int getCurrentAngle() override {
+        return currentAngle;
+    };
+    ExpectedArrivalMillis position(float relativePosition) override {
+        int angle = minimumAngle + relativePosition * (maximumAngle - minimumAngle);
+        return write(angle);
+    }    
+
 };

@@ -9,6 +9,15 @@
 
 const int SERVOS_PER_EARWIG_ACTUATOR = 3;
 
+enum class EarwigState {
+    Idle,
+    LockToStart,
+    MoveToStart,
+    LockForExtrude,
+    MoveFilament,
+    Homing
+};
+
 class EarwigFilamentActuator {
  public:
   EarwigFilamentActuator();
@@ -44,9 +53,11 @@ class EarwigFilamentActuator {
   float calculateExtrusionAmount(float startPosition, float endPosition);
   float calculateEndPosition(float startPosition);
   void home(float fixedClamp, float movingClamp, float pusher);
-  bool home_pusher_and_update_servo_min_angle();
+  void home_pusher_and_update_servo_min_angle();
   void printSwitchStates();
   bool isBusy();
+
+  String earwigStateToString(EarwigState state);
 
  private:
   IServo* pusherServo = nullptr;
@@ -56,8 +67,7 @@ class EarwigFilamentActuator {
   Pcf8574Switch* movingClampLimitSwitch = nullptr;  
 
   float mmToExtrude;
-  // int state;
-  String state;  // For development
+  EarwigState currentState;  
   unsigned long nextActionMillis;
   bool use_filament_detector = false;
   bool require_filament = false;

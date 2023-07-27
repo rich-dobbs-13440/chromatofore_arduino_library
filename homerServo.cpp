@@ -7,19 +7,33 @@ HomerServo::HomerServo() {
     currentState = HomingState::Idle;
     stateStartTime = 0;
     nextActionTime = 0;
-    limitSwitch = nullptr;
+    
 
-    angle = -1;
-    fastSweepInitialAngle = 90;
-    fast_sweep_increment = 2;
+    currentAngle = -1;
+    int minimumAngle = -1;
+    int maximumAngle = -1;
+    int currentAngle = -1;
 
-    movementDelayMillis = 1000;
-    switchDelayMillis = 500;
-    sweepDelayMillis = 100;
+}
+
+void HomerServo::dumpState() {
+    if (debug) {
+        debugLog("State", homingStateToString(currentState), "stateStartTime", stateStartTime, "nextActionTime", nextActionTime, "angle", currentAngle);
+    }
+}
+
+void HomerServo::home(ISwitch* limitSwitch) {
+    this->limitSwitch = limitSwitch;
+    this->currentState = HomingState::Begin;
+    this->stateStartTime = millis();
+    this->nextActionTime = this->stateStartTime;  
+    dumpState();
 }
 
 // HomerServo.cpp
 void HomerServo::loop() {
+    auto startingState = currentState;
+    unsigned long startingNextActionTime = nextActionTime;
     unsigned long currentTime = millis();
     switch(currentState) {
         case HomingState::Idle:
@@ -27,15 +41,14 @@ void HomerServo::loop() {
         case HomingState::Begin:
             if (currentTime >= nextActionTime) {
                 if (limitSwitch) {
-                    angle = fastSweepInitialAngle;
                     // Tell servo to move to initial angle to start sweep
-                    auto expectedTime = write(angle);
+                    auto expectedTime = write(fastSweepInitialAngle);
                     currentState = HomingState::FastSweep;
                     stateStartTime = currentTime;
                     nextActionTime = expectedTime + switchDelayMillis;
                 } else {
                     // Tell servo to move to default start position
-                    this->position(0);
+                    position(0);
                     currentState = HomingState::WaitForServoMovement;
                     stateStartTime = currentTime;
                     nextActionTime = currentTime + movementDelayMillis + switchDelayMillis;
@@ -56,13 +69,12 @@ void HomerServo::loop() {
             if (currentTime >= nextActionTime) {
                 if (limitSwitch->Triggered()) {
                     currentState = HomingState::Retracting;
-                    angle += 10;
                     // Tell servo to back away some.
-                    auto expectedTime = write(angle);
+                    auto expectedTime = write(currentAngle+=10);
                     stateStartTime = currentTime;
                     nextActionTime = expectedTime + switchDelayMillis;
                 } else {
-                    angle -= fast_sweep_increment;
+                    int angle = currentAngle - fastSweepAngleIncrement;
                     if (angle < 0) {
                         currentState = HomingState::ReportFailure;
                         nextActionTime = currentTime;
@@ -80,7 +92,7 @@ void HomerServo::loop() {
         case HomingState::Retracting:
             if (limitSwitch->Triggered()) {
                 // Need to continue backing away if possible
-                angle += 5;
+                int angle = currentAngle + 5;
                 if (angle > fastSweepInitialAngle) {
                     currentState = HomingState::ReportFailure;
                     stateStartTime = currentTime;
@@ -94,6 +106,7 @@ void HomerServo::loop() {
                 stateStartTime = currentTime;
                 nextActionTime = currentTime;
             }
+            break;
 
         case HomingState::FinalSweep:
             if (currentTime >= nextActionTime) {
@@ -102,7 +115,7 @@ void HomerServo::loop() {
                     stateStartTime = currentTime;
                     nextActionTime = currentTime;
                 } else {
-                    angle -= 1;
+                    int angle = currentAngle - 1;
                     if (angle < 0) {
                         currentState = HomingState::ReportFailure;
                         nextActionTime = currentTime;
@@ -116,10 +129,27 @@ void HomerServo::loop() {
             }
             break;
 
-        // Similarly, implement the other states...
+        case HomingState::SetMinAngle:
+            {
+                setMinimumAngle(currentAngle);
+                debugLog("Minumum angle is now:", currentAngle);
+                currentState = HomingState::Idle;
+                auto expectedArrivalTime = position(0);
+                nextActionTime = expectedArrivalTime;
+                
+            }
+            break;
+
         
-        case HomingState::ReportFailure:
-            // Handle failure, print debug information, etc.
+        case HomingState::ReportFailure: 
+            {    
+                debugLog("   Is switch malfunctioning?");
+                debugLog("   Is servo horn installed properly?");
+                debugLog("   Is moving clamp binding?");  
+                currentState = HomingState::Idle;
+                auto expectedArrivalTime = position(0);
+                nextActionTime = expectedArrivalTime;     
+            } 
             break;
 
         default:
@@ -127,78 +157,17 @@ void HomerServo::loop() {
             debugLog("Unhandled state: ", homingStateToString(currentState));
             break;
     }
+    if (currentState != startingState || nextActionTime != startingNextActionTime) {
+        dumpState();
+    }
+    
 }
 
-/* bool EarwigFilamentActuator::home_pusher_and_update_servo_min_angle() {
-  // Get the clamps open and at ease, so that the pusher can move freely.
-
-  fixedClampServo->atEase();
-  movingClampServo->atEase();  
-  // Get the pusher servo into its start position to begin the sweep.
-  int angle = 90;
-  pusherServo->write(angle);
-  delay(movementDelayMillis + switchDelayMillis);
-  if (movingClampLimitSwitch->read()  != SwitchState::Triggered) {
-    while (movingClampLimitSwitch->read()  != SwitchState::Untriggered) {
-      // Fast sweep servo until limit switch is triggered
-      angle -= 1;
-      pusherServo->write(angle);
-      delay(pusherSweepDelayMillis);
-      if (angle < 0) {
-        debugLog("Failure: At minimum angle of zero, and limit switch not triggered.");
-        debugLog("   Is switch malfunctioning?");
-        debugLog("   Is servo horn installed properly?");
-        debugLog("   Is moving clamp binding?");
-        return false;
-      }
-    }
-    // Now back off a bit.
-    int first_trigger = angle;
-    while(movingClampLimitSwitch->read()  != SwitchState::Untriggered) {
-      angle += 5;
-      pusherServo->write(angle);
-      delay(movementDelayMillis + switchDelayMillis);
-      if (angle > first_trigger + 20) {
-        debugLog("Failure: Moving away from limit switch and it is not released.");
-        debugLog("   Is switch malfunctioning?");
-        debugLog("   Is servo horn installed properly?");
-        debugLog("   Is moving clamp binding?");
-        return false;        
-      }
-    }
-    // Now sweep forward again until limit switch is retriggered.
-    while (movingClampLimitSwitch->read()  != SwitchState::Untriggered) {
-      // Fast sweep servo until limit switch is triggered
-      angle -= 1;
-      if (angle < 0) {
-        debugLog("Failure: At minimum angle of zero, and limit switch not triggered.");
-        debugLog("   Is switch malfunctioning?");
-        debugLog("   Is servo horn installed properly?");
-        debugLog("   Is moving clamp binding?");
-        return false;
-      }
-      pusherServo->write(angle);
-      delay(pusherSweepDelayMillis);         
-    }
-    pusherServo->setMinimumAngle(angle);
-    debugLog("Minumum angle is now:", angle);
-    return true;
-  } else {
-        debugLog("Failure: At starting andle and limit switch is triggered");
-        debugLog("   Is switch malfunctioning?");
-        debugLog("   Is servo horn installed properly?");
-        debugLog("   Is moving clamp binding?");
-        return false;
-  }
-  return true; */
 
 
-void HomerServo::home(ISwitch* limitSwitch) {
-    this->limitSwitch = limitSwitch;
-    this->currentState = HomingState::Begin;
-    this->stateStartTime = millis();
-    this->nextActionTime = this->stateStartTime;  
-}
+
+
+
 
 
 String HomerServo::homingStateToString(HomingState state) {

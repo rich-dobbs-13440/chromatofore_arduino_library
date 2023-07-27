@@ -32,9 +32,7 @@ class Pca9685PinServo : public HomerServo {
   String id;
   PCA9685ServoDriver* servoDriver;
   int pin = -1;
-  int minimumAngle = -1;
-  int maximumAngle = -1;
-  int currentAngle = -1;
+
 
  public:
   Pca9685PinServo() {}
@@ -53,39 +51,29 @@ class Pca9685PinServo : public HomerServo {
              "initialRelativePosition", initialRelativePosition);    
     */
 
-    this->minimumAngle = minimumAngle;
-    this->maximumAngle = maximumAngle;
-    position(initialRelativePosition);
+    setMinimumAngle(minimumAngle);
+    setMaximumAngle(maximumAngle);
+    auto expectedArrivalTime = position(initialRelativePosition);
     // debugLog("CurrentAngle", currentAngle);
-    delay(100);
+    delay(expectedArrivalTime-millis());
     servoDriver->atEase(pin);
   }
 
-  ExpectedArrivalMillis write(int angle) {
+  ExpectedArrivalMillis write(int angle) override {
     currentAngle = angle;
     servoDriver->setServoAngle(pin, angle);
     // For now, just use a constant delay.  It would be better to base this on how much the servo moves and the speed of the servo.  
     return millis() + movementDelayMillis; 
   }
 
-  ExpectedArrivalMillis position(float relativePosition) {
-    int angle = minimumAngle + relativePosition * (maximumAngle - minimumAngle);
-    return write(angle);
-  }
+
   void detach() {}
 
   void dump() {
-    debugLog("id:", id, "pin:", pin, "minimumAngle:", minimumAngle,
-             "maximumAngle:", maximumAngle, "currentAngle:", currentAngle);
+    debugLog("id:", id, "pin:", pin, "minimumAngle:", getMinimumAngle(),
+             "maximumAngle:", getMaximumAngle(), "currentAngle:", currentAngle);
   }
 
   void atEase() { servoDriver->atEase(pin); }
 
-  void setMinimumAngle(int minimumAngle) override {
-    this->minimumAngle = minimumAngle;
-  }
-
-  void setMaximumAngle(int maximumAngle) override {
-    this->maximumAngle = maximumAngle;
-  }  
 };

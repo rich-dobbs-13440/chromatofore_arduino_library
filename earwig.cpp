@@ -7,17 +7,6 @@ const float BACK_POSITION = 1;
 const float OPEN_POSITION = 0;
 const float CLOSED_POSITION = 1;
 
-// const int IDLE_STATE = 0;
-// const int LOCK_TO_START_STATE  = 1;
-// const int MOVE_TO_START_STATE = 2;
-// const int LOCK_FOR_EXTRUDE_STATE  = 3;
-// const int MOVE_FILAMENT_STATE = 4;
-
-String IDLE_STATE = "IDLE";
-String LOCK_TO_START_STATE = "LOCK_TO_START";
-String MOVE_TO_START_STATE = "MOVE_TO_START";
-String LOCK_FOR_EXTRUDE_STATE = "LOCK_FOR_EXTRUDE";
-String MOVE_FILAMENT_STATE = "MOVE_FILAMENT";
 
 float mmPerStep = 24.0;
 
@@ -25,7 +14,7 @@ EarwigFilamentActuator::EarwigFilamentActuator() {
 
   mmToExtrude = 0.0;
 
-  state = IDLE_STATE;
+  currentState = EarwigState::Idle;  
   nextActionMillis = -1;
 }
 
@@ -48,13 +37,11 @@ void EarwigFilamentActuator::dump() {
   // debugLog("sweepDelayMillis:", sweepDelayMillis);
   // debugLog("switchDelayMillis:", switchDelayMillis);
   
-  debugLog("mmToExtrude", mmToExtrude);
-  debugLog("state:", state);
-  debugLog("nextActionMillis:", nextActionMillis);
+  debugLog("mmToExtrude", mmToExtrude, "currentState:", earwigStateToString(currentState), "nextActionMillis:", nextActionMillis);
 }
 
 bool EarwigFilamentActuator::isBusy() {
-  return state != IDLE_STATE;
+  return currentState != EarwigState::Idle; 
 }
 
 void EarwigFilamentActuator::begin(int minimumFixedClampServoAngle,
@@ -71,7 +58,7 @@ void EarwigFilamentActuator::begin(int minimumFixedClampServoAngle,
                           maximumMovingClampServoAngle, 0);
   pusherServo->begin(minimumPusherServoAngle, maximumPusherServoAngle, 0);
 
-  state = IDLE_STATE;
+  currentState = EarwigState::Idle;
 
   // dump();
 }
@@ -81,74 +68,75 @@ void end_extrusion() {
 }
 
 void EarwigFilamentActuator::loop() {
-  // static int count = 0;
-  // if (count < 5) {  // Only run the following code for the first 5 calls to
-  // loop
-  //   debugLog("Address:");
-  //   Serial.println((uintptr_t)this, HEX);  // Print the address of this
-  //   object debugLog("State: '", state); count++;  // Increase the counter
-  // }
-  if (state == IDLE_STATE) {
-    return;
-  }
-  if (millis() > nextActionMillis) {
-    debugLog("Starting state: '", state, "'   mmToExtrude:", mmToExtrude);
-    if (state == LOCK_TO_START_STATE) {
-      auto expectedArrivalTimeFCS = fixedClampServo->position(CLOSED_POSITION);
-      auto expectedArrivalTimeMCS = movingClampServo->position(OPEN_POSITION);
-      nextActionMillis = max(expectedArrivalTimeFCS, expectedArrivalTimeMCS);
-      state = MOVE_TO_START_STATE;
-    } else if (state == MOVE_TO_START_STATE) {
-
-      float startPosition = mmToExtrude > 0 ? FRONT_POSITION : BACK_POSITION;
-      auto expectedArrivalTime = pusherServo->position(startPosition);
-      nextActionMillis = expectedArrivalTime;
-      state = LOCK_FOR_EXTRUDE_STATE;
-    } else if (state == LOCK_FOR_EXTRUDE_STATE) {
-      auto expectedArrivalTimeFCS = fixedClampServo->position(OPEN_POSITION);
-      auto expectedArrivalTimeMCS = movingClampServo->position(CLOSED_POSITION);
-      nextActionMillis = max(expectedArrivalTimeFCS, expectedArrivalTimeMCS);
-      state = MOVE_FILAMENT_STATE;
-    } else if (state == MOVE_FILAMENT_STATE) {
-      bool stop_moving = false;
-      if (use_filament_detector) {
-        auto filamentState = filamentDetector->read();
-        if (filamentState == FilamentDetectorState::Undetected) {
-          stop_moving = require_filament;
-          debugLog("FilamentDetectorState::Undetected.  stop_moving:", stop_moving);
-        } else if (filamentState == FilamentDetectorState::Detected) {
-          stop_moving = !require_filament;
-          debugLog("FilamentDetectorState::Detected.  stop_moving:", stop_moving);
-        } else {
-          stop_moving = true;
-          debugLog("FilamentDetectorState::Error.  stop_moving:", stop_moving);
-        }
-      }
-      if (!stop_moving) {
-        float startPosition = mmToExtrude > 0 ? FRONT_POSITION : BACK_POSITION;
-        float endPosition = calculateEndPosition(startPosition);
-        auto expectedArrivalTime = pusherServo->position(endPosition);
-        mmToExtrude -= calculateExtrusionAmount(startPosition, endPosition);
-        nextActionMillis = expectedArrivalTime;
-      }
-      if (!stop_moving && abs(mmToExtrude) > 1) {
-        state = LOCK_TO_START_STATE;
-      } else {
-        mmToExtrude = 0;
-        auto expectedArrivalTimeFCS = fixedClampServo->position(OPEN_POSITION);
-        auto expectedArrivalTimeMCS = movingClampServo->position(CLOSED_POSITION);
-        auto expectedArrivalTime = max(expectedArrivalTimeFCS, expectedArrivalTimeMCS);
-        // TODO:  Add an additional state to get rid of this delay!
-        delay(expectedArrivalTime - millis());
-        fixedClampServo->atEase();
-        movingClampServo->atEase();
-        pusherServo->atEase();
-        state = IDLE_STATE;
-      }
+    if (currentState == EarwigState::Idle) {
+        return;
     }
-    debugLog("Ending state: '", state, "' nextActionMillis:", nextActionMillis,
-             "mmToExtrude:", mmToExtrude);
-  }
+    if (currentState == EarwigState::Homing){
+        pusherServo->loop();
+        fixedClampServo->loop();
+        movingClampServo->loop();
+        if (pusherServo->isIdle() && fixedClampServo->isIdle() && movingClampServo->isIdle()) {
+          nextActionMillis = millis();
+          currentState = EarwigState::Idle;
+          return;
+        }
+    }
+    if (millis() > nextActionMillis) {
+        debugLog("Starting state: '", earwigStateToString(currentState), "'   mmToExtrude:", mmToExtrude);
+        if (currentState == EarwigState::LockToStart) {
+            auto expectedArrivalTimeFCS = fixedClampServo->position(CLOSED_POSITION);
+            auto expectedArrivalTimeMCS = movingClampServo->position(OPEN_POSITION);
+            nextActionMillis = max(expectedArrivalTimeFCS, expectedArrivalTimeMCS);
+            currentState = EarwigState::MoveToStart;
+        } else if (currentState == EarwigState::MoveToStart) {
+
+            float startPosition = mmToExtrude > 0 ? FRONT_POSITION : BACK_POSITION;
+            auto expectedArrivalTime = pusherServo->position(startPosition);
+            nextActionMillis = expectedArrivalTime;
+            currentState = EarwigState::LockForExtrude;
+        } else if (currentState == EarwigState::LockForExtrude) {
+            auto expectedArrivalTimeFCS = fixedClampServo->position(OPEN_POSITION);
+            auto expectedArrivalTimeMCS = movingClampServo->position(CLOSED_POSITION);
+            nextActionMillis = max(expectedArrivalTimeFCS, expectedArrivalTimeMCS);
+            currentState = EarwigState::MoveFilament;
+        } else if (currentState == EarwigState::MoveFilament) {
+            bool stop_moving = false;
+            if (use_filament_detector) {
+                auto filamentState = filamentDetector->read();
+                if (filamentState == FilamentDetectorState::Undetected) {
+                    stop_moving = require_filament;
+                    debugLog("FilamentDetectorState::Undetected.  stop_moving:", stop_moving);
+                } else if (filamentState == FilamentDetectorState::Detected) {
+                    stop_moving = !require_filament;
+                    debugLog("FilamentDetectorState::Detected.  stop_moving:", stop_moving);
+                } else {
+                    stop_moving = true;
+                    debugLog("FilamentDetectorState::Error.  stop_moving:", stop_moving);
+                }
+            }
+            if (!stop_moving) {
+                float startPosition = mmToExtrude > 0 ? FRONT_POSITION : BACK_POSITION;
+                float endPosition = calculateEndPosition(startPosition);
+                auto expectedArrivalTime = pusherServo->position(endPosition);
+                mmToExtrude -= calculateExtrusionAmount(startPosition, endPosition);
+                nextActionMillis = expectedArrivalTime;
+            }
+            if (!stop_moving && abs(mmToExtrude) > 1) {
+                currentState = EarwigState::LockToStart;
+            } else {
+                mmToExtrude = 0;
+                auto expectedArrivalTimeFCS = fixedClampServo->position(OPEN_POSITION);
+                auto expectedArrivalTimeMCS = movingClampServo->position(CLOSED_POSITION);
+                auto expectedArrivalTime = max(expectedArrivalTimeFCS, expectedArrivalTimeMCS);
+                delay(expectedArrivalTime - millis());
+                fixedClampServo->atEase();
+                movingClampServo->atEase();
+                pusherServo->atEase();
+                currentState = EarwigState::Idle;
+            }
+        }
+        debugLog("Ending state: '", earwigStateToString(currentState), "' nextActionMillis:", nextActionMillis, "mmToExtrude:", mmToExtrude);
+    }
 }
 
 float EarwigFilamentActuator::calculateExtrusionAmount(float startPosition,
@@ -173,18 +161,19 @@ void EarwigFilamentActuator::extrude(float mmOfFilament,
   this->use_filament_detector = use_filament_detector;
   this->require_filament = require_filament;
   mmToExtrude += mmOfFilament;
-  debugLog("Current state: '", state, "' mmToExtrude:", mmToExtrude);
+  debugLog("Current state: '", earwigStateToString(currentState), "' mmToExtrude:", mmToExtrude);
   // Ignore feedrate for now.
 
-  if (state == IDLE_STATE) {
-    state = LOCK_TO_START_STATE;
-    debugLog("Entering state: '", state, "' mmToExtrude:", mmToExtrude);
+  if (currentState == EarwigState::Idle) {
+    currentState = EarwigState::LockToStart;  //LOCK_TO_START_STATE;
+    debugLog("Entering state: '", earwigStateToString(currentState), "' mmToExtrude:", mmToExtrude);
     nextActionMillis = millis();
   }
 }
 
-bool EarwigFilamentActuator::home_pusher_and_update_servo_min_angle() {
+void EarwigFilamentActuator::home_pusher_and_update_servo_min_angle() {
   // Get the clamps open and at ease, so that the pusher can move freely.
+  debugLog("In home_pusher_and_update_servo_min_angle");
   auto expectedArrivalTimeFCS = fixedClampServo->position(OPEN_POSITION);
   auto expectedArrivalTimeMCS = movingClampServo->position(OPEN_POSITION);
   auto expectedArrivalTime = max(expectedArrivalTimeFCS, expectedArrivalTimeMCS);
@@ -192,91 +181,30 @@ bool EarwigFilamentActuator::home_pusher_and_update_servo_min_angle() {
   fixedClampServo->atEase();
   movingClampServo->atEase();  
   pusherServo->home(movingClampLimitSwitch);
-
-
-
-/*
-  // Get the pusher servo into its start position to begin the sweep.
-  int angle = 90;
-  pusherServo->write(angle);
-  delay(movementDelayMillis + switchDelayMillis);
-  if (movingClampLimitSwitch->read()  != SwitchState::Triggered) {
-    while (movingClampLimitSwitch->read()  != SwitchState::Untriggered) {
-      // Fast sweep servo until limit switch is triggered
-      angle -= 1;
-      pusherServo->write(angle);
-      delay(pusherSweepDelayMillis);
-      if (angle < 0) {
-        debugLog("Failure: At minimum angle of zero, and limit switch not triggered.");
-        debugLog("   Is switch malfunctioning?");
-        debugLog("   Is servo horn installed properly?");
-        debugLog("   Is moving clamp binding?");
-        return false;
-      }
-    }
-    // Now back off a bit.
-    int first_trigger = angle;
-    while(movingClampLimitSwitch->read()  != SwitchState::Untriggered) {
-      angle += 5;
-      pusherServo->write(angle);
-      delay(movementDelayMillis + switchDelayMillis);
-      if (angle > first_trigger + 20) {
-        debugLog("Failure: Moving away from limit switch and it is not released.");
-        debugLog("   Is switch malfunctioning?");
-        debugLog("   Is servo horn installed properly?");
-        debugLog("   Is moving clamp binding?");
-        return false;        
-      }
-    }
-    // Now sweep forward again until limit switch is retriggered.
-    while (movingClampLimitSwitch->read()  != SwitchState::Untriggered) {
-      // Fast sweep servo until limit switch is triggered
-      angle -= 1;
-      if (angle < 0) {
-        debugLog("Failure: At minimum angle of zero, and limit switch not triggered.");
-        debugLog("   Is switch malfunctioning?");
-        debugLog("   Is servo horn installed properly?");
-        debugLog("   Is moving clamp binding?");
-        return false;
-      }
-      pusherServo->write(angle);
-      delay(pusherSweepDelayMillis);         
-    }
-    pusherServo->setMinimumAngle(angle);
-    debugLog("Minumum angle is now:", angle);
-    return true;
-  } else {
-        debugLog("Failure: At starting andle and limit switch is triggered");
-        debugLog("   Is switch malfunctioning?");
-        debugLog("   Is servo horn installed properly?");
-        debugLog("   Is moving clamp binding?");
-        return false;
-  }
-
-*/  
-  return true;
-
 }
+
 
 void EarwigFilamentActuator::home(float fixedClamp, float movingClamp,
                                   float pusher) {
   // The arguments are either nan or a value.  The exact value is ignored.
   if (isnan(fixedClamp) && isnan(movingClamp) && isnan(pusher)) {
     // Home all axes if no additional parameters given
-    fixedClampServo->position(OPEN_POSITION);
-    movingClampServo->position(OPEN_POSITION);
-    pusherServo->position(FRONT_POSITION);
+    fixedClampServo->home(nullptr);
+    movingClampServo->home(nullptr);
+    home_pusher_and_update_servo_min_angle();
   } else {
     if (!isnan(fixedClamp)) {
-      fixedClampServo->position(OPEN_POSITION);
+      fixedClampServo->home(nullptr);
     }
     if (!isnan(movingClamp)) {
-      movingClampServo->position(OPEN_POSITION);
+      movingClampServo->home(nullptr);
     }
     if (!isnan(pusher)) {
       home_pusher_and_update_servo_min_angle();
     }
   }
+  currentState = EarwigState::Homing;
+  nextActionMillis = millis();  
 }
 
 void EarwigFilamentActuator::printSwitchStates() {
@@ -305,5 +233,25 @@ void EarwigFilamentActuator::printSwitchStates() {
   } else {
     debugLog("No limit_switch in Earwig.");
   }
+}
+
+
+String EarwigFilamentActuator::earwigStateToString(EarwigState state) {
+    switch (state) {
+        case EarwigState::Idle:
+            return "Idle State";
+        case EarwigState::LockToStart:
+            return "Lock To Start State";
+        case EarwigState::MoveToStart:
+            return "Move To Start State";
+        case EarwigState::LockForExtrude:
+            return "Lock For Extrude State";
+        case EarwigState::MoveFilament:
+            return "Move Filament State";
+        case EarwigState::Homing:
+            return "Homing State";
+        default:
+            return "Unknown State";
+    }
 }
 
