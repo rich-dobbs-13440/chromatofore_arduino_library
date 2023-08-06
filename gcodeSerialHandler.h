@@ -24,14 +24,15 @@ angles for tool 0
 
 G28 T1 B C X ; Home all axes, say for loading or unloading filament.
 
-The following commands are parsed, but the functionality is not yet implemented:
 
 
 G1 T1 E10 F10 ; Extrude 10 mm of filament, feed rate currently ignore.  
 
 G1 T1 E-100 Q1 ;  Retract 100 mm of filament, but only so long as filament is detected.
 
-M119 T0; Report the endstop state - at this time just whether filament is detected or not.
+M119 T0; Report the switch state - for the filament detector and endstops.
+
+M999 T1 B1 C1 X1:  Reset the servo associated with a particular axes, presumably after fixing a problem.
 
 */
 

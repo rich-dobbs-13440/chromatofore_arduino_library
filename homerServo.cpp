@@ -76,6 +76,7 @@ void HomerServo::loop() {
                 } else {
                     int angle = currentAngle - fastSweepAngleIncrement;
                     if (angle < 0) {
+                        failedState = currentState;
                         currentState = HomingState::ReportFailure;
                         nextActionTime = currentTime;
 
@@ -94,6 +95,7 @@ void HomerServo::loop() {
                 // Need to continue backing away if possible
                 int angle = currentAngle + 5;
                 if (angle > fastSweepInitialAngle) {
+                    failedState = currentState;
                     currentState = HomingState::ReportFailure;
                     stateStartTime = currentTime;
                     nextActionTime = currentTime;
@@ -117,6 +119,7 @@ void HomerServo::loop() {
                 } else {
                     int angle = currentAngle - 1;
                     if (angle < 0) {
+                        failedState = currentState;
                         currentState = HomingState::ReportFailure;
                         nextActionTime = currentTime;
                     } else {
@@ -136,21 +139,26 @@ void HomerServo::loop() {
                 currentState = HomingState::Idle;
                 auto expectedArrivalTime = position(0);
                 nextActionTime = expectedArrivalTime;
-                
             }
             break;
 
         
         case HomingState::ReportFailure: 
             {    
+                debugLog("FAILURE:  Homing Failed.  State that failed:", homingStateToString(failedState), "currentAngle", currentAngle);
                 debugLog("   Is switch malfunctioning?");
                 debugLog("   Is servo horn installed properly?");
-                debugLog("   Is moving clamp binding?");  
-                currentState = HomingState::Idle;
-                auto expectedArrivalTime = position(0);
-                nextActionTime = expectedArrivalTime;     
+                debugLog("   Is moving clamp binding in slide?");  
+                debugLog("   Are other servos in appropriate position for homing?"); 
+                currentState = HomingState::Failed;              
+                nextActionTime = currentTime;    
             } 
             break;
+
+        case HomingState::Failed:
+            // Will stay in failed state until reset;
+            break;
+
 
         default:
             // Handle unknown states, possibly reset to a known state
@@ -162,11 +170,6 @@ void HomerServo::loop() {
     }
     
 }
-
-
-
-
-
 
 
 
@@ -185,7 +188,9 @@ String HomerServo::homingStateToString(HomingState state) {
         case HomingState::SetMinAngle:
             return "Set Mininum Angle State";
         case HomingState::ReportFailure:
-            return "Failure State";
+            return "Report Failure State";
+        case HomingState::Failed:
+            return "Failed State";
         case HomingState::WaitForServoMovement:
             return "Wait For Servo Movement State";
         default:

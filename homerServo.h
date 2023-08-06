@@ -15,11 +15,13 @@ enum class HomingState {
     SetMinAngle,
     ReportFailure, 
     WaitForServoMovement,
+    Failed, 
 };
 
 class HomerServo : public IServo {
 private:
-    HomingState currentState;
+    HomingState currentState = HomingState::Idle;
+    HomingState failedState = HomingState::Idle;
     ISwitch* limitSwitch = nullptr;
     unsigned long stateStartTime;
     unsigned long nextActionTime; 
@@ -32,7 +34,7 @@ private:
 protected:
     unsigned int  movementDelayMillis = 1000;
     unsigned int  switchDelayMillis = 500;
-    unsigned int  sweepDelayMillis = 100;
+    unsigned int  sweepDelayMillis = 50;
     int currentAngle = -1; 
 
     void dumpState();
@@ -44,6 +46,13 @@ public:
     bool isIdle() override {
         return currentState == HomingState::Idle;
     }
+    bool isFailed() override {
+        return currentState == HomingState::Failed;
+    }
+    virtual void reset() override {
+        failedState = HomingState::Idle;
+        currentState = HomingState::Idle;
+    }   
 
     static String homingStateToString(HomingState state);
 

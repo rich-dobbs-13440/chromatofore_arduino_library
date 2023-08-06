@@ -20,5 +20,7 @@ public:
   virtual int getCurrentAngle() = 0;
   virtual void home(ISwitch* limitSwitch)  = 0;
   virtual bool isIdle() = 0; 
+  virtual bool isFailed() = 0;
+  virtual void reset() = 0;
 };
 

@@ -58,7 +58,7 @@ class I2CConfiguration {
     Serial.println("I2C bus configuration:");
     for (int i = 0; i < MAX_BOARD_TYPES; i++) {
       for (int j = 0; j < boardCount[i]; j++) {
-        Serial.print("Board: [");
+        Serial.print("    Board: [");
         Serial.print(i);
         Serial.print("][");
         Serial.print(j);

@@ -2,7 +2,7 @@
 #include <earwig.h>
 #include <i2cConfiguration.h>
 
-int i2cActuatorCount = 4; // Update to match your physical configuration.
+int i2cActuatorCount = 5; // Update to match your physical configuration.
 ChromatoforeFilamentChanger changer(i2cActuatorCount);
 
 // Update based on jumper settings for your specific I2C boards:
@@ -33,7 +33,27 @@ int i2CservoConfiguration[][4] = {
   {sb0, 9, 3, PUSHER},
   {sb0, 10, 3, MOVING_CLAMP},
   {sb0, 11, 3, FIXED_CLAMP}, 
-  // Add configuration of daughter board here!       
+  {sb0, 12, 4, PUSHER},
+  {sb0, 13, 4, MOVING_CLAMP},
+  {sb0, 14, 4, FIXED_CLAMP},   
+
+  // Uncomment to configuration daughter board here for more than 5 actuators 
+
+  // {sb0, 0, 5, PUSHER},
+  // {sb0, 1, 5, MOVING_CLAMP},
+  // {sb0, 2, 5, FIXED_CLAMP},
+  // {sb0, 3, 6, PUSHER},
+  // {sb0, 4, 6, MOVING_CLAMP},
+  // {sb0, 5, 6, FIXED_CLAMP},  
+  // {sb0, 6, 7, PUSHER},
+  // {sb0, 7, 7, MOVING_CLAMP},
+  // {sb0, 8, 7, FIXED_CLAMP},  
+  // {sb0, 9, 8, PUSHER},
+  // {sb0, 10, 8, MOVING_CLAMP},
+  // {sb0, 11, 8, FIXED_CLAMP}, 
+  // {sb0, 12, 9, PUSHER},
+  // {sb0, 13, 9, MOVING_CLAMP},
+  // {sb0, 14, 9, FIXED_CLAMP},           
 }; 
 
 // The pins on the PCF8574 are numbered from right to left 
@@ -41,17 +61,37 @@ int i2CservoConfiguration[][4] = {
 // in the opposite direction from the servo board:
 int gb0 = gpioBoard0Address;
 int gb1 = gpioBoard1Address;
+//int gb2 = gpioBoard2Address;
 int i2cGpioConfiguration[][4] = {
    // I2C, pin, actuator, role
   {gb0, 7, 0, FILAMENT_DETECTOR},
   {gb0, 6, 1, FILAMENT_DETECTOR},
   {gb0, 5, 2, FILAMENT_DETECTOR},
   {gb0, 4, 3, FILAMENT_DETECTOR},
-  {gb1, 3, 0, MOVING_CLAMP_LIMIT_SWITCH},
-  {gb1, 2, 1, MOVING_CLAMP_LIMIT_SWITCH},
-  {gb1, 1, 2, MOVING_CLAMP_LIMIT_SWITCH},
-  {gb1, 0, 3, MOVING_CLAMP_LIMIT_SWITCH},  
-  // Add configuration of second daughter GPIO boards here!  
+  {gb0, 3, 4, FILAMENT_DETECTOR},
+  // {gb0, 2, 5, FILAMENT_DETECTOR},
+  // {gb0, 1, 6, FILAMENT_DETECTOR},
+  // {gb0, 0, 7, FILAMENT_DETECTOR},
+
+
+  {gb1, 7, 0, MOVING_CLAMP_LIMIT_SWITCH},
+  {gb1, 6, 1, MOVING_CLAMP_LIMIT_SWITCH},
+  {gb1, 5, 2, MOVING_CLAMP_LIMIT_SWITCH},
+  {gb1, 4, 3, MOVING_CLAMP_LIMIT_SWITCH},  
+  {gb1, 3, 4, MOVING_CLAMP_LIMIT_SWITCH}, 
+  // {gb0, 2, 5, MOVING_CLAMP_LIMIT_SWITCH},
+  // {gb0, 1, 6, MOVING_CLAMP_LIMIT_SWITCH},
+  // {gb0, 0, 7, MOVING_CLAMP_LIMIT_SWITCH},  
+
+  // Add configuration of additional daughter GPIO boards here! 
+  // One possibility is to add just one more GPIO board and share it for both the filament detector and limit switch: 
+  // {gb2, 7, 8, FILAMENT_DETECTOR},
+  // {gb2, 6, 9, FILAMENT_DETECTOR},
+
+
+  // {gb2, 3, 8, MOVING_CLAMP_LIMIT_SWITCH}, 
+  // {gb2, 3, 9, MOVING_CLAMP_LIMIT_SWITCH}, 
+
 };
 
 bool setupFailed = false;

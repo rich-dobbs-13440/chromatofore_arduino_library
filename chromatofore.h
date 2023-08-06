@@ -61,7 +61,7 @@ class ChromatoforeFilamentChanger {
   ~ChromatoforeFilamentChanger();
 
   String version() {
-    return "0.2l - limit switch homing - tie into Earwig state machine";
+    return "0.2l - limit switch homing - reset functionality and isFailed method";
   }
 
   bool configureForI2C(int actuatorCount, int servoCount, int servoConfiguration[][4], int pinCount, int pinConfiguration[][4]);

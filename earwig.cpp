@@ -68,6 +68,8 @@ void end_extrusion() {
 }
 
 void EarwigFilamentActuator::loop() {
+    auto startingState = currentState;
+    auto startingNextActionMillis = nextActionMillis;
     if (currentState == EarwigState::Idle) {
         return;
     }
@@ -82,7 +84,7 @@ void EarwigFilamentActuator::loop() {
         }
     }
     if (millis() > nextActionMillis) {
-        debugLog("Starting state: '", earwigStateToString(currentState), "'   mmToExtrude:", mmToExtrude);
+        // debugLog("Starting state: ", earwigStateToString(currentState), "   mmToExtrude:", mmToExtrude);
         if (currentState == EarwigState::LockToStart) {
             auto expectedArrivalTimeFCS = fixedClampServo->position(CLOSED_POSITION);
             auto expectedArrivalTimeMCS = movingClampServo->position(OPEN_POSITION);
@@ -135,7 +137,10 @@ void EarwigFilamentActuator::loop() {
                 currentState = EarwigState::Idle;
             }
         }
-        debugLog("Ending state: '", earwigStateToString(currentState), "' nextActionMillis:", nextActionMillis, "mmToExtrude:", mmToExtrude);
+        if (currentState != startingState || nextActionMillis != startingNextActionMillis) {
+            //dumpState();
+            debugLog("Ending state: '", earwigStateToString(currentState), "' nextActionMillis:", nextActionMillis, "mmToExtrude:", mmToExtrude);
+        }
     }
 }
 

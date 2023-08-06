@@ -171,6 +171,9 @@ void GcodeSerialHandler::executeGcodeCommand(const GcodeCommand &cmd) {
                    "No current actuator found with index:", currentFilament);
         }
         break;
+      case 999:
+        // Reset the servo associated with a particular axes, presumably after fixing a problem.
+        // M999 T1 B1 C1 X1: 
       case 1001: {
         // Test case 1
         int t = currentFilament;
