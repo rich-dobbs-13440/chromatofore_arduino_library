@@ -308,7 +308,7 @@ bool ChromatoforeFilamentChanger::configureForI2C(int actuatorCount, int servoCo
 
   for (int actuatorIndex = 0; actuatorIndex < i2cActuatorCount; actuatorIndex++) {
     Pca9685ServoInfo pusher = getPca9685ServoInfo(servoConfiguration, i2cServoCount, actuatorIndex, PUSHER);
-    debugLog("pusher servoIndex:", pusher.servoIndex, " ic2 address:", pusher.i2cAddress, "pin:", pusher.pin);
+    debugLog("pusher servoIndex:", pusher.servoIndex, " ic2 address:", asHex(pusher.i2cAddress), "pin:", pusher.pin);
     if (pusher.servoIndex < 0) {
       debugLog("Missing configuration for actuator: ", actuatorIndex, " Role = PUSHER");
       return false;
@@ -318,7 +318,7 @@ bool ChromatoforeFilamentChanger::configureForI2C(int actuatorCount, int servoCo
                             pusher.pin);
 
     Pca9685ServoInfo movingClamp = getPca9685ServoInfo(servoConfiguration, i2cServoCount, actuatorIndex, MOVING_CLAMP);
-    debugLog("movingClamp servoIndex:", movingClamp.servoIndex, " ic2 address:", movingClamp.i2cAddress,
+    debugLog("movingClamp servoIndex:", movingClamp.servoIndex, " ic2 address:", asHex(movingClamp.i2cAddress),
              "pin:", movingClamp.pin);
     if (movingClamp.servoIndex < 0) {
       debugLog("Missing configuration for actuator: ", actuatorIndex, " Role = MOVING_CLAMP");
@@ -330,7 +330,7 @@ bool ChromatoforeFilamentChanger::configureForI2C(int actuatorCount, int servoCo
                                  movingClamp.pin);
 
     Pca9685ServoInfo fixedClamp = getPca9685ServoInfo(servoConfiguration, i2cServoCount, actuatorIndex, FIXED_CLAMP);
-    debugLog("fixedClamp servoIndex:", fixedClamp.servoIndex, " ic2 address:", fixedClamp.i2cAddress,
+    debugLog("fixedClamp servoIndex:", fixedClamp.servoIndex, " ic2 address:", asHex(fixedClamp.i2cAddress),
              "pin:", fixedClamp.pin);
     if (fixedClamp.servoIndex < 0) {
       debugLog("Missing configuration for actuator: ", actuatorIndex, " Role = FIXED_CLAMP");
@@ -352,7 +352,10 @@ bool ChromatoforeFilamentChanger::configureForI2C(int actuatorCount, int servoCo
       PCF8574GPIOMultiplexer *multiplexer =
           i2cConfiguration->getGpioMultiplexerFromAddress(filamentDetectorInfo.i2cAddress);
       if (multiplexer == nullptr) {
-        debugLog("Can't find a PCF8574 GPIO Multiplexer with addrees of ", filamentDetectorInfo.i2cAddress);
+        debugLog(
+          "Can't find a PCF8574 GPIO Multiplexer with address of ", 
+          asHex(filamentDetectorInfo.i2cAddress), 
+          "for filament detector");
         return false;
       }
       i2cFilamentDetector = &i2cFilamentDetectors[actuatorIndex];
@@ -371,7 +374,10 @@ bool ChromatoforeFilamentChanger::configureForI2C(int actuatorCount, int servoCo
     } else {
       PCF8574GPIOMultiplexer *multiplexer = i2cConfiguration->getGpioMultiplexerFromAddress(limitSwitchInfo.i2cAddress);
       if (multiplexer == nullptr) {
-        debugLog("Can't find a PCF8574 GPIO Multiplexer with addrees of ", limitSwitchInfo.i2cAddress);
+        debugLog(
+          "Can't find a PCF8574 GPIO Multiplexer with address of ", 
+          asHex(limitSwitchInfo.i2cAddress), 
+          " for limit switch");
         return false;
       }
       movingClampLimitSwitch = new Pcf8574Switch(limitSwitchInfo, *multiplexer);

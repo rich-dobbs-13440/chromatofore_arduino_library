@@ -10,7 +10,7 @@ int servoBoard0Address = 0x41;
 // int servoBoard1Address = ???
 
 int gpioBoard0Address = 0x22;
-int gpioBoard1Address = 0x24;
+int gpioBoard1Address = 0x27;
 // int gpioBoard2Address = ???
 
 
